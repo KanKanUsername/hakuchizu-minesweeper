@@ -190,21 +190,24 @@ export default function MapBoard({ geoJson, adjacency, cells, status, onOpen, on
     }
   };
 
-  const handleZoomIn = useCallback(() => {
+  const handleZoomIn = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (svgRef.current && zoomBehaviorRef.current) {
-      d3.select(svgRef.current).transition().duration(200).call(zoomBehaviorRef.current.scaleBy, 1.5);
+      d3.select(svgRef.current).transition().duration(250).call(zoomBehaviorRef.current.scaleBy, 1.5);
     }
   }, []);
 
-  const handleZoomOut = useCallback(() => {
+  const handleZoomOut = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (svgRef.current && zoomBehaviorRef.current) {
-      d3.select(svgRef.current).transition().duration(200).call(zoomBehaviorRef.current.scaleBy, 0.67);
+      d3.select(svgRef.current).transition().duration(250).call(zoomBehaviorRef.current.scaleBy, 0.67);
     }
   }, []);
 
-  const handleZoomReset = useCallback(() => {
+  const handleZoomReset = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (svgRef.current && zoomBehaviorRef.current) {
-      d3.select(svgRef.current).transition().duration(300).call(zoomBehaviorRef.current.transform, d3.zoomIdentity);
+      d3.select(svgRef.current).transition().duration(350).call(zoomBehaviorRef.current.transform, d3.zoomIdentity);
     }
   }, []);
 
@@ -320,6 +323,7 @@ export default function MapBoard({ geoJson, adjacency, cells, status, onOpen, on
                   fill={fill}
                   stroke={stroke}
                   strokeWidth={strokeWidth}
+                  vectorEffect="non-scaling-stroke"
                   className="cursor-pointer transition-all duration-150"
                   onClick={handleClick}
                   onContextMenu={handleContextMenu}
@@ -395,15 +399,15 @@ export default function MapBoard({ geoJson, adjacency, cells, status, onOpen, on
         {/* Zoom Controls */}
         <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-10">
           <button 
-            onClick={() => setShowAdjacency(!showAdjacency)} 
+            onClick={(e) => { e.stopPropagation(); setShowAdjacency(!showAdjacency); }} 
             className="w-10 h-10 bg-surface rounded shadow border border-line text-ink text-xl font-bold flex items-center justify-center hover:bg-paper" 
             title="隣接ハイライト切替 (H / Aキー)"
           >
             {showAdjacency ? '🎯' : '⭕'}
           </button>
-          <button onClick={handleZoomIn} className="w-10 h-10 bg-surface rounded shadow border border-line text-ink text-xl font-bold flex items-center justify-center hover:bg-paper" title="拡大">+</button>
-          <button onClick={handleZoomOut} className="w-10 h-10 bg-surface rounded shadow border border-line text-ink text-xl font-bold flex items-center justify-center hover:bg-paper" title="縮小">−</button>
-          <button onClick={handleZoomReset} className="w-10 h-10 bg-surface rounded shadow border border-line text-ink text-lg font-bold flex items-center justify-center hover:bg-paper" title="ズームリセット">⟲</button>
+          <button onClick={handleZoomIn} onTouchEnd={(e) => { e.preventDefault(); handleZoomIn(); }} className="w-10 h-10 bg-surface rounded shadow border border-line text-ink text-xl font-bold flex items-center justify-center hover:bg-paper" title="拡大">+</button>
+          <button onClick={handleZoomOut} onTouchEnd={(e) => { e.preventDefault(); handleZoomOut(); }} className="w-10 h-10 bg-surface rounded shadow border border-line text-ink text-xl font-bold flex items-center justify-center hover:bg-paper" title="縮小">−</button>
+          <button onClick={handleZoomReset} onTouchEnd={(e) => { e.preventDefault(); handleZoomReset(); }} className="w-10 h-10 bg-surface rounded shadow border border-line text-ink text-lg font-bold flex items-center justify-center hover:bg-paper" title="ズームリセット">⟲</button>
         </div>
     </div>
   );

@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: var(--theme-paper);
+  --color-paper-deep: var(--theme-paper-deep);
+  --color-ink: var(--theme-ink);
+  --color-ink-soft: var(--theme-ink-soft);
+  --color-amber: var(--theme-amber);
+  --color-danger: var(--theme-danger);
+  --color-safe: var(--theme-safe);
+  --color-line: var(--theme-line);
+  --color-surface: var(--theme-surface);
+  
+  --color-map-unopened: var(--theme-map-unopened);
+  --color-map-adjacent: var(--theme-map-adjacent);
+  --color-map-revealed-mine: var(--theme-map-revealed-mine);
+}
+
+:root {
+  /* Light Theme */
+  --theme-paper: #EAF0EE;
+  --theme-paper-deep: #DCE6E2;
+  --theme-ink: #1B2A41;
+  --theme-ink-soft: #4A5A6E;
+  --theme-amber: #C97A2B;
+  --theme-danger: #AD3F36;
+  --theme-safe: #6C9A82;
+  --theme-line: #B9C7C1;
+  --theme-surface: #ffffff;
+  
+  /* Map states */
+  --theme-map-unopened: #F6F2E8;
+  --theme-map-opened: #EAF0EE;
+  --theme-map-adjacent: #FBE9CE;
+  --theme-map-opened-hover: #DCE6E2;
+  --theme-map-flagged: #FCE8E6;
+  --theme-map-revealed-mine: #E7C9C5;
+
+  /* Number colors */
+  --theme-num-1: #2563EB;
+  --theme-num-2: #16A34A;
+  --theme-num-3: #DC2626;
+  --theme-num-4: #7C3AED;
+  --theme-num-5: #9A3412;
+  --theme-num-6: #0D9488;
+  --theme-num-7: #111827;
+  --theme-num-8: #4B5563;
+  
+  --theme-grid-color: rgba(0, 0, 0, 0.025);
+}
+
+[data-theme="dark"] {
+  /* Dark Theme */
+  --theme-paper: #121A25;
+  --theme-paper-deep: #0D131B;
+  --theme-ink: #EAF0EE;
+  --theme-ink-soft: #9BAAB8;
+  --theme-amber: #E29B52;
+  --theme-danger: #E66C63;
+  --theme-safe: #8ABCA0;
+  --theme-line: #2E4057;
+  --theme-surface: #1E2D40;
+  
+  /* Map states */
+  --theme-map-unopened: #23344B;
+  --theme-map-opened: #121A25;
+  --theme-map-adjacent: #37475E;
+  --theme-map-opened-hover: #1E2D40;
+  --theme-map-flagged: #3D2626;
+  --theme-map-revealed-mine: #542221;
+
+  /* Number colors */
+  --theme-num-1: #60A5FA;
+  --theme-num-2: #4ADE80;
+  --theme-num-3: #F87171;
+  --theme-num-4: #A78BFA;
+  --theme-num-5: #FB923C;
+  --theme-num-6: #2DD4BF;
+  --theme-num-7: #F3F4F6;
+  --theme-num-8: #9CA3AF;
+  
+  --theme-grid-color: rgba(255, 255, 255, 0.025);
+}
+
+body {
+  background:
+    repeating-linear-gradient(0deg, var(--theme-grid-color) 0px, var(--theme-grid-color) 1px, transparent 1px, transparent 24px),
+    repeating-linear-gradient(90deg, var(--theme-grid-color) 0px, var(--theme-grid-color) 1px, transparent 1px, transparent 24px),
+    var(--theme-paper);
+  color: var(--theme-ink);
+  font-family: "Hiragino Sans", "Yu Gothic", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}

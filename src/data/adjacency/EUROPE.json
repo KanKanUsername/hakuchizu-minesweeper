@@ -1,1 +1,240 @@
-{"ALB":["GRC","MKD","MNE"],"AUT":["CHE","CZE","DEU","HUN","ITA","SVK","SVN"],"BEL":["DEU","FRA","LUX","NLD"],"BGR":["GRC","MKD","ROU","SRB"],"BIH":["HRV","MNE","SRB"],"BLR":["LTU","LVA","POL","RUS","UKR"],"CHE":["AUT","DEU","FRA","ITA"],"CYP":[],"CZE":["AUT","DEU","POL","SVK"],"DEU":["AUT","BEL","CHE","CZE","DNK","FRA","LUX","NLD","POL"],"DNK":["DEU"],"ESP":["FRA","PRT"],"EST":["LVA","RUS"],"FIN":["NOR","RUS","SWE"],"FRA":["BEL","CHE","DEU","ESP","ITA","LUX"],"GBR":["IRL"],"GRC":["ALB","BGR","MKD"],"HRV":["BIH","HUN","MNE","SRB","SVN"],"HUN":["AUT","HRV","ROU","SRB","SVK","SVN","UKR"],"IRL":["GBR"],"ISL":[],"ITA":["AUT","CHE","FRA","SVN"],"LTU":["BLR","LVA","POL","RUS"],"LUX":["BEL","DEU","FRA"],"LVA":["BLR","EST","LTU","RUS"],"MDA":["ROU","UKR"],"MKD":["ALB","BGR","GRC","SRB"],"MLT":[],"MNE":["ALB","BIH","HRV","SRB"],"NLD":["BEL","DEU"],"NOR":["FIN","RUS","SWE"],"POL":["BLR","CZE","DEU","LTU","RUS","SVK","UKR"],"PRT":["ESP"],"ROU":["BGR","HUN","MDA","SRB","UKR"],"RUS":["BLR","EST","FIN","LTU","LVA","NOR","POL","UKR"],"SRB":["BGR","BIH","HRV","HUN","MKD","MNE","ROU"],"SVK":["AUT","CZE","HUN","POL","UKR"],"SVN":["AUT","HRV","HUN","ITA"],"SWE":["FIN","NOR"],"UKR":["BLR","HUN","MDA","POL","ROU","RUS","SVK"]}
+{
+  "ALB": [
+    "GRC",
+    "MKD",
+    "MNE"
+  ],
+  "AUT": [
+    "CHE",
+    "CZE",
+    "DEU",
+    "HUN",
+    "ITA",
+    "SVK",
+    "SVN"
+  ],
+  "BEL": [
+    "DEU",
+    "FRA",
+    "LUX",
+    "NLD"
+  ],
+  "BGR": [
+    "GRC",
+    "MKD",
+    "ROU",
+    "SRB"
+  ],
+  "BIH": [
+    "HRV",
+    "MNE",
+    "SRB"
+  ],
+  "BLR": [
+    "LTU",
+    "LVA",
+    "POL",
+    "RUS",
+    "UKR"
+  ],
+  "CHE": [
+    "AUT",
+    "DEU",
+    "FRA",
+    "ITA"
+  ],
+  "CYP": [
+    "GRC"
+  ],
+  "CZE": [
+    "AUT",
+    "DEU",
+    "POL",
+    "SVK"
+  ],
+  "DEU": [
+    "AUT",
+    "BEL",
+    "CHE",
+    "CZE",
+    "DNK",
+    "FRA",
+    "LUX",
+    "NLD",
+    "POL"
+  ],
+  "DNK": [
+    "DEU"
+  ],
+  "ESP": [
+    "FRA",
+    "PRT"
+  ],
+  "EST": [
+    "LVA",
+    "RUS"
+  ],
+  "FIN": [
+    "NOR",
+    "RUS",
+    "SWE"
+  ],
+  "FRA": [
+    "BEL",
+    "CHE",
+    "DEU",
+    "ESP",
+    "ITA",
+    "LUX",
+    "GBR"
+  ],
+  "GBR": [
+    "IRL",
+    "FRA",
+    "ISL"
+  ],
+  "GRC": [
+    "ALB",
+    "BGR",
+    "MKD",
+    "CYP"
+  ],
+  "HRV": [
+    "BIH",
+    "HUN",
+    "MNE",
+    "SRB",
+    "SVN"
+  ],
+  "HUN": [
+    "AUT",
+    "HRV",
+    "ROU",
+    "SRB",
+    "SVK",
+    "SVN",
+    "UKR"
+  ],
+  "IRL": [
+    "GBR"
+  ],
+  "ISL": [
+    "GBR"
+  ],
+  "ITA": [
+    "AUT",
+    "CHE",
+    "FRA",
+    "SVN",
+    "MLT"
+  ],
+  "LTU": [
+    "BLR",
+    "LVA",
+    "POL",
+    "RUS"
+  ],
+  "LUX": [
+    "BEL",
+    "DEU",
+    "FRA"
+  ],
+  "LVA": [
+    "BLR",
+    "EST",
+    "LTU",
+    "RUS"
+  ],
+  "MDA": [
+    "ROU",
+    "UKR"
+  ],
+  "MKD": [
+    "ALB",
+    "BGR",
+    "GRC",
+    "SRB"
+  ],
+  "MLT": [
+    "ITA"
+  ],
+  "MNE": [
+    "ALB",
+    "BIH",
+    "HRV",
+    "SRB"
+  ],
+  "NLD": [
+    "BEL",
+    "DEU"
+  ],
+  "NOR": [
+    "FIN",
+    "RUS",
+    "SWE"
+  ],
+  "POL": [
+    "BLR",
+    "CZE",
+    "DEU",
+    "LTU",
+    "RUS",
+    "SVK",
+    "UKR"
+  ],
+  "PRT": [
+    "ESP"
+  ],
+  "ROU": [
+    "BGR",
+    "HUN",
+    "MDA",
+    "SRB",
+    "UKR"
+  ],
+  "RUS": [
+    "BLR",
+    "EST",
+    "FIN",
+    "LTU",
+    "LVA",
+    "NOR",
+    "POL",
+    "UKR"
+  ],
+  "SRB": [
+    "BGR",
+    "BIH",
+    "HRV",
+    "HUN",
+    "MKD",
+    "MNE",
+    "ROU"
+  ],
+  "SVK": [
+    "AUT",
+    "CZE",
+    "HUN",
+    "POL",
+    "UKR"
+  ],
+  "SVN": [
+    "AUT",
+    "HRV",
+    "HUN",
+    "ITA"
+  ],
+  "SWE": [
+    "FIN",
+    "NOR"
+  ],
+  "UKR": [
+    "BLR",
+    "HUN",
+    "MDA",
+    "POL",
+    "ROU",
+    "RUS",
+    "SVK"
+  ]
+}

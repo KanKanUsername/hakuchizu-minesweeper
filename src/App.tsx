@@ -33,6 +33,7 @@ export default function App() {
   const [difficulty, setDifficulty] = useState<Difficulty>(() => {
     return (localStorage.getItem('difficulty') as Difficulty) || 'normal';
   });
+  const [showAdjacency, setShowAdjacency] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('difficulty', difficulty);
@@ -106,6 +107,7 @@ export default function App() {
     highlightedCode,
     setHighlightedCode,
     openCell,
+    chordCell,
     toggleFlag,
     resetGame,
     totalMines,
@@ -174,30 +176,47 @@ export default function App() {
         </div>
 
         {/* Tools / Actions */}
-        <div className="px-6 py-3 border-b border-paper-deep flex items-center justify-between bg-map-unopened flex-wrap gap-2">
-          <div className="flex items-center gap-2 bg-surface rounded-lg p-1 shadow-sm border border-paper-deep">
-            <button
-              onClick={() => setMode('open')}
-              className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${
-                mode === 'open' ? 'bg-ink text-surface shadow' : 'text-ink-soft hover:bg-paper'
-              }`}
-            >
-              {t(language, 'open')}
-            </button>
-            <button
-              onClick={() => setMode('flag')}
-              className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all flex items-center gap-1 ${
-                mode === 'flag' ? 'bg-danger text-surface shadow' : 'text-ink-soft hover:bg-paper'
-              }`}
-            >
-              <span>⚑</span> {t(language, 'flag').replace('⚑ ', '')}
-            </button>
+        <div className="px-6 py-3 border-b border-paper-deep flex items-center justify-between bg-map-unopened flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-ink-soft hidden sm:inline">操作:</span>
+            <div className="flex items-center gap-2 bg-surface rounded-lg p-1 shadow-sm border border-paper-deep">
+              <button
+                onClick={() => setMode('open')}
+                className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${
+                  mode === 'open' ? 'bg-ink text-surface shadow' : 'text-ink-soft hover:bg-paper'
+                }`}
+              >
+                {t(language, 'open')}
+              </button>
+              <button
+                onClick={() => setMode('flag')}
+                className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all flex items-center gap-1 ${
+                  mode === 'flag' ? 'bg-danger text-surface shadow' : 'text-ink-soft hover:bg-paper'
+                }`}
+              >
+                <span>⚑</span> {t(language, 'flag').replace('⚑ ', '')}
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {/* Show Adjacency Toggle */}
+            <button
+              onClick={() => setShowAdjacency(prev => !prev)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm border flex items-center gap-1.5 ${
+                showAdjacency 
+                  ? 'bg-amber text-surface border-amber hover:opacity-90' 
+                  : 'bg-surface border-line text-ink hover:bg-paper'
+              }`}
+              title={language === 'ja' ? '隣接する市区町村を強調表示します' : 'Highlight adjacent regions'}
+            >
+              <span>{showAdjacency ? '🎯' : '⭕'}</span>
+              <span>{t(language, 'adjacencyToggle')}</span>
+            </button>
+
             {/* Difficulty Selector */}
             <div className="flex items-center gap-1 bg-surface rounded-lg p-1 shadow-sm border border-paper-deep">
-              {(['easy', 'normal', 'hard'] as Difficulty[]).map((d) => (
+              {(['easy', 'normal', 'hard', 'extreme'] as Difficulty[]).map((d) => (
                 <button
                   key={d}
                   onClick={() => setDifficulty(d)}
@@ -207,7 +226,9 @@ export default function App() {
                         ? 'bg-safe text-surface shadow'
                         : d === 'hard'
                           ? 'bg-danger text-surface shadow'
-                          : 'bg-amber text-surface shadow'
+                          : d === 'extreme'
+                            ? 'bg-extreme text-surface shadow'
+                            : 'bg-amber text-surface shadow'
                       : 'text-ink-soft hover:bg-paper'
                   }`}
                 >
@@ -241,11 +262,14 @@ export default function App() {
               cells={cells}
               status={status}
               onOpen={openCell}
+              onChord={chordCell}
               onToggleFlag={toggleFlag}
               highlightedCode={highlightedCode}
               setHighlightedCode={setHighlightedCode}
               mode={mode}
               isLongPressEnabled={isLongPressEnabled}
+              showAdjacency={showAdjacency}
+              setShowAdjacency={setShowAdjacency}
             />
 
           {/* Game Over / Clear Overlay */}

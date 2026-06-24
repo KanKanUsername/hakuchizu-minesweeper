@@ -8,8 +8,8 @@ export const translations = {
     time: 'Time',
     best: 'Best',
     mines: 'Mines',
-    open: '開く',
-    flag: '⚑ フラグ',
+    open: '⛏️ 探索',
+    flag: '⚑ 旗',
     retry: 'リトライ',
     loading: 'Loading Data...',
     generating: 'Generating Map...',
@@ -46,10 +46,12 @@ export const translations = {
     easy: '初級',
     normal: '中級',
     hard: '上級',
+    extreme: '超上級',
     municipalityMode: '🏠 市区町村モード（高難度）',
     municipalityDesc: '都道府県を選ぶと、その中の市区町村でマインスイーパが遊べます',
     cells: 'マス',
-    dailyTrivia: '💡 今日のプチ雑学'
+    dailyTrivia: '💡 今日のプチ雑学',
+    adjacencyToggle: '隣接表示'
   },
   en: {
     menu: '≡ Menu',
@@ -58,7 +60,7 @@ export const translations = {
     time: 'Time',
     best: 'Best',
     mines: 'Mines',
-    open: 'Open',
+    open: '⛏️ Explore',
     flag: '⚑ Flag',
     retry: 'Retry',
     loading: 'Loading Data...',
@@ -96,10 +98,12 @@ export const translations = {
     easy: 'Easy',
     normal: 'Normal',
     hard: 'Hard',
+    extreme: 'Extreme',
     municipalityMode: '🏠 Municipality Mode (Hard)',
     municipalityDesc: 'Select a prefecture to play with its cities, towns & villages',
     cells: 'cells',
-    dailyTrivia: '💡 Today\'s Trivia'
+    dailyTrivia: '💡 Today\'s Trivia',
+    adjacencyToggle: 'Show Neighbors'
   }
 };
 

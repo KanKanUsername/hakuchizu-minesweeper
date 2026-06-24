@@ -16,7 +16,8 @@ export const REGIONS = [
   { code: 'R05', name: '近畿地方', nameEn: 'Kinki Region', prefs: ['24', '25', '26', '27', '28', '29', '30'] },
   { code: 'R06', name: '中国地方', nameEn: 'Chugoku Region', prefs: ['31', '32', '33', '34', '35'] },
   { code: 'R07', name: '四国地方', nameEn: 'Shikoku Region', prefs: ['36', '37', '38', '39'] },
-  { code: 'R08', name: '九州・沖縄地方', nameEn: 'Kyushu/Okinawa Region', prefs: ['40', '41', '42', '43', '44', '45', '46', '47'] }
+  { code: 'R08', name: '九州・沖縄地方', nameEn: 'Kyushu/Okinawa Region', prefs: ['40', '41', '42', '43', '44', '45', '46', '47'] },
+  { code: 'R09', name: '東海地方', nameEn: 'Tokai Region', prefs: ['21', '22', '23', '24'] }
 ];
 
 export function getMapName(code: string, geoJsonPrefName: string | undefined, language: 'ja' | 'en'): string {

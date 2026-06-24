@@ -94,7 +94,7 @@ export default function RegionSelectModal({ isOpen, onClose, onSelectCode, curre
                 <h2 className="text-base md:text-lg font-bold text-ink mb-1 flex items-center gap-2">{t(language, 'municipalityMode')}</h2>
                 <p className="text-xs text-ink-soft mb-3">{t(language, 'municipalityDesc')}</p>
                 <div className="space-y-4">
-                  {REGIONS.map(region => (
+                  {REGIONS.filter(r => r.code !== 'R09').map(region => (
                     <div key={region.code}>
                       <h3 className="text-sm font-bold text-ink-soft mb-2 border-b border-paper-deep pb-1">{language === 'en' ? region.nameEn : region.name}</h3>
                       <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">

@@ -14,20 +14,22 @@ interface MapBoardProps {
   cells: Record<string, CellState>;
   status: string;
   onOpen: (code: string) => void;
+  onChord: (code: string) => void;
   onToggleFlag: (code: string) => void;
   highlightedCode: string | null;
   setHighlightedCode: (code: string | null) => void;
   mode: 'open' | 'flag';
   isLongPressEnabled?: boolean;
+  showAdjacency: boolean;
+  setShowAdjacency: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-export default function MapBoard({ geoJson, adjacency, cells, status, onOpen, onToggleFlag, highlightedCode, setHighlightedCode, mode, isLongPressEnabled = true }: MapBoardProps) {
+export default function MapBoard({ geoJson, adjacency, cells, status, onOpen, onChord, onToggleFlag, highlightedCode, setHighlightedCode, mode, isLongPressEnabled = true, showAdjacency, setShowAdjacency }: MapBoardProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const gRef = useRef<SVGGElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const zoomBehaviorRef = useRef<any>(null);
   const [dimensions, setDimensions] = useState({ width: 700, height: 560 });
-  const [showAdjacency, setShowAdjacency] = useState(true);
 
   // Track whether the user is currently dragging/zooming to suppress click events
   const isDraggingRef = useRef(false);
@@ -106,25 +108,6 @@ export default function MapBoard({ geoJson, adjacency, cells, status, onOpen, on
         [-padding, -padding],
         [width + padding, height + padding]
       ])
-      .filter((event: any) => {
-        // Always allow wheel zoom
-        if (event.type === 'wheel') return true;
-        // For pointer events (d3 v7 uses PointerEvent, not TouchEvent)
-        if (event.type === 'pointerdown') {
-          // Mouse drag: only when zoomed in
-          if (event.pointerType === 'mouse') {
-            const currentTransform = d3.zoomTransform(svgRef.current!);
-            return currentTransform.k > 1.05;
-          }
-          // Touch: always allow pointerdown so pinch (2-finger) can start.
-          // We'll handle single-finger-at-1x suppression in the zoom start handler.
-          if (event.pointerType === 'touch') {
-            return true;
-          }
-        }
-        // Allow all other events (pointermove, pointerup, etc.)
-        return true;
-      })
       .on('start', (event) => {
         if (event.sourceEvent) {
           dragStartPosRef.current = { x: event.sourceEvent.clientX || 0, y: event.sourceEvent.clientY || 0 };
@@ -155,23 +138,12 @@ export default function MapBoard({ geoJson, adjacency, cells, status, onOpen, on
 
     zoomBehaviorRef.current = zoom;
     const svgSelection = d3.select(svgRef.current);
-    svgSelection.call(zoom);
-
-    // For pinch-to-zoom: we need to let d3 handle multi-touch.
-    // Add a touchstart listener that prevents default browser zoom for 2+ fingers.
-    const svgEl = svgRef.current;
-    const preventBrowserPinch = (event: TouchEvent) => {
-      if (event.touches.length >= 2) {
-        event.preventDefault();
-      }
-    };
-    svgEl.addEventListener('touchstart', preventBrowserPinch, { passive: false });
+    svgSelection.call(zoom).on('dblclick.zoom', null);
 
     return () => {
       svgSelection.on('.zoom', null);
-      svgEl.removeEventListener('touchstart', preventBrowserPinch);
     };
-  }, [dimensions]);
+  }, [dimensions, geoJson]);
 
   // Reset zoom when map data changes (user switches map)
   useEffect(() => {
@@ -192,22 +164,25 @@ export default function MapBoard({ geoJson, adjacency, cells, status, onOpen, on
 
   const handleZoomIn = useCallback((e?: React.MouseEvent) => {
     e?.stopPropagation();
+    e?.preventDefault();
     if (svgRef.current && zoomBehaviorRef.current) {
-      d3.select(svgRef.current).transition().duration(250).call(zoomBehaviorRef.current.scaleBy, 1.5);
+      zoomBehaviorRef.current.scaleBy(d3.select(svgRef.current).transition().duration(250), 1.5);
     }
   }, []);
 
   const handleZoomOut = useCallback((e?: React.MouseEvent) => {
     e?.stopPropagation();
+    e?.preventDefault();
     if (svgRef.current && zoomBehaviorRef.current) {
-      d3.select(svgRef.current).transition().duration(250).call(zoomBehaviorRef.current.scaleBy, 0.67);
+      zoomBehaviorRef.current.scaleBy(d3.select(svgRef.current).transition().duration(250), 0.67);
     }
   }, []);
 
   const handleZoomReset = useCallback((e?: React.MouseEvent) => {
     e?.stopPropagation();
+    e?.preventDefault();
     if (svgRef.current && zoomBehaviorRef.current) {
-      d3.select(svgRef.current).transition().duration(350).call(zoomBehaviorRef.current.transform, d3.zoomIdentity);
+      zoomBehaviorRef.current.transform(d3.select(svgRef.current).transition().duration(250), d3.zoomIdentity);
     }
   }, []);
 
@@ -218,8 +193,10 @@ export default function MapBoard({ geoJson, adjacency, cells, status, onOpen, on
   const features = rewoundGeoJson?.features || [];
 
   return (
-    <div ref={wrapperRef} className="relative w-full h-full min-h-[350px] md:min-h-[560px]" onMouseMove={handleMouseMove} style={{ '--zoom-scale': '1' } as React.CSSProperties}>
+    <div ref={wrapperRef} className="relative w-full h-full min-h-[350px] md:min-h-[560px]" onMouseMove={handleMouseMove} style={{ '--zoom-scale': '1', touchAction: 'none' } as React.CSSProperties}>
       <svg ref={svgRef} className="select-none w-full h-[350px] md:h-[560px]" viewBox={`0 0 ${dimensions.width} ${dimensions.height}`} style={{ touchAction: 'none' }}>
+        {/* Transparent background to capture all mouse/wheel events even on empty spaces (sea) */}
+        <rect width="100%" height="100%" fill="none" pointerEvents="all" />
         <g ref={gRef}>
           {/* Target Prefecture Cells */}
           {features.map((feature: any) => {
@@ -248,28 +225,32 @@ export default function MapBoard({ geoJson, adjacency, cells, status, onOpen, on
                fill = 'var(--theme-map-revealed-mine)'; // revealed mine
             }
 
-            let stroke = 'var(--theme-ink)';
-            let strokeWidth = 1;
+            let stroke = 'var(--theme-ink-soft)';
+            let strokeWidth = 1.2;
             
-            if (cell.isOpen && !cell.isMine) stroke = 'var(--theme-line)'; // Subtler border
+            if (cell.isOpen && !cell.isMine) {
+              stroke = 'var(--theme-line)'; // Subtler border
+              strokeWidth = 1.0;
+            }
             if (cell.isMine && (cell.isOpen || status === 'gameover')) stroke = 'var(--theme-danger)';
             if (cell.isFlagged && !cell.isOpen) stroke = 'var(--theme-danger)';
             
             // Unified hover highlight borders
             if (isCenter) {
               stroke = 'var(--theme-amber)';
-              strokeWidth = 2; // Thicker for center
+              strokeWidth = 2.5; // Thicker for center
             } else if (isAdjacent) {
               stroke = 'var(--theme-amber)';
-              strokeWidth = 1.5; // Moderate for adjacent
+              strokeWidth = 1.8; // Moderate for adjacent
             }
 
-            const centroid = pathGenerator.centroid(feature);
-            
             const handleClick = () => {
                // Suppress click if user was dragging/panning
                if (isDraggingRef.current) return;
-               if (mode === 'flag') {
+               
+               if (cell.isOpen) {
+                 onChord(code);
+               } else if (mode === 'flag') {
                  onToggleFlag(code);
                } else {
                  onOpen(code);
@@ -317,24 +298,36 @@ export default function MapBoard({ geoJson, adjacency, cells, status, onOpen, on
             };
 
             return (
-              <g key={code}>
-                <path
-                  d={pathGenerator(feature) || ''}
-                  fill={fill}
-                  stroke={stroke}
-                  strokeWidth={strokeWidth}
-                  vectorEffect="non-scaling-stroke"
-                  className="cursor-pointer transition-all duration-150"
-                  onClick={handleClick}
-                  onContextMenu={handleContextMenu}
-                  onTouchStart={handleTouchStart}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={handleTouchEnd}
-                  onTouchCancel={handleTouchEnd}
-                  onMouseEnter={() => setHighlightedCode(code)}
-                  onMouseLeave={() => setHighlightedCode(null)}
-                />
-                
+              <path
+                key={code}
+                d={pathGenerator(feature) || ''}
+                fill={fill}
+                stroke={stroke}
+                strokeWidth={strokeWidth}
+                vectorEffect="non-scaling-stroke"
+                className="cursor-pointer transition-all duration-150"
+                onClick={handleClick}
+                onContextMenu={handleContextMenu}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onTouchCancel={handleTouchEnd}
+                onMouseEnter={() => setHighlightedCode(code)}
+                onMouseLeave={() => setHighlightedCode(null)}
+              />
+            );
+          })}
+
+          {/* 2. Text Indicators (Flags, Names, Numbers) on top of all paths */}
+          {features.map((feature: any) => {
+            const code = feature.properties.code;
+            const cell = cells[code];
+            if (!cell) return null;
+
+            const centroid = pathGenerator.centroid(feature);
+
+            return (
+              <g key={`${code}-text`} className="pointer-events-none">
                 {/* Flag Icon */}
                 {cell.isFlagged && !cell.isOpen && (
                   <text
@@ -342,8 +335,11 @@ export default function MapBoard({ geoJson, adjacency, cells, status, onOpen, on
                     y={centroid[1]}
                     textAnchor="middle"
                     dominantBaseline="central"
-                    className="font-mono text-[16px] pointer-events-none"
+                    className="font-mono pointer-events-none"
                     fill="var(--theme-danger)"
+                    style={{
+                      fontSize: 'calc(16px / var(--zoom-scale, 1))'
+                    }}
                   >
                     ⚑
                   </text>
@@ -353,15 +349,16 @@ export default function MapBoard({ geoJson, adjacency, cells, status, onOpen, on
                 {cell.isOpen && !cell.isMine && (
                   <text
                     x={centroid[0]}
-                    y={centroid[1] - (cell.neighborMines > 0 ? 5 : 0)}
+                    y={centroid[1]}
                     textAnchor="middle"
                     dominantBaseline="central"
                     className="font-bold pointer-events-none transition-opacity duration-300"
                     fill="var(--theme-ink)"
-                    fontSize="6"
                     style={{ 
+                      fontSize: 'calc(10px / var(--zoom-scale, 1))',
                       opacity: 'calc((var(--zoom-scale, 1) - 1.1) * 2.5)',
-                      textShadow: '0px 0px 2px var(--theme-surface), 0px 0px 2px var(--theme-surface)'
+                      textShadow: '0px 0px 3px var(--theme-surface), 0px 0px 3px var(--theme-surface), 0px 0px 3px var(--theme-surface)',
+                      transform: cell.neighborMines > 0 ? 'translateY(calc(-5px / var(--zoom-scale, 1)))' : 'none'
                     }}
                   >
                     {feature.properties.name}
@@ -372,12 +369,16 @@ export default function MapBoard({ geoJson, adjacency, cells, status, onOpen, on
                 {cell.isOpen && !cell.isMine && cell.neighborMines > 0 && (
                   <text
                     x={centroid[0]}
-                    y={centroid[1] + 3}
+                    y={centroid[1]}
                     textAnchor="middle"
                     dominantBaseline="central"
-                    className="font-mono font-bold text-[15px] pointer-events-none"
+                    className="font-mono font-bold pointer-events-none"
                     fill={getNumberColor(cell.neighborMines)}
-                    style={{ textShadow: '0px 0px 2px var(--theme-paper-deep)' }}
+                    style={{ 
+                      fontSize: 'calc(14px / var(--zoom-scale, 1))',
+                      textShadow: '0px 0px 3px var(--theme-surface), 0px 0px 3px var(--theme-surface)',
+                      transform: 'translateY(calc(5px / var(--zoom-scale, 1)))'
+                    }}
                   >
                     {cell.neighborMines}
                   </text>
@@ -405,9 +406,9 @@ export default function MapBoard({ geoJson, adjacency, cells, status, onOpen, on
           >
             {showAdjacency ? '🎯' : '⭕'}
           </button>
-          <button onClick={handleZoomIn} onTouchEnd={(e) => { e.preventDefault(); handleZoomIn(); }} className="w-10 h-10 bg-surface rounded shadow border border-line text-ink text-xl font-bold flex items-center justify-center hover:bg-paper" title="拡大">+</button>
-          <button onClick={handleZoomOut} onTouchEnd={(e) => { e.preventDefault(); handleZoomOut(); }} className="w-10 h-10 bg-surface rounded shadow border border-line text-ink text-xl font-bold flex items-center justify-center hover:bg-paper" title="縮小">−</button>
-          <button onClick={handleZoomReset} onTouchEnd={(e) => { e.preventDefault(); handleZoomReset(); }} className="w-10 h-10 bg-surface rounded shadow border border-line text-ink text-lg font-bold flex items-center justify-center hover:bg-paper" title="ズームリセット">⟲</button>
+          <button onClick={handleZoomIn} className="w-10 h-10 bg-surface rounded shadow border border-line text-ink text-xl font-bold flex items-center justify-center hover:bg-paper" title="拡大">+</button>
+          <button onClick={handleZoomOut} className="w-10 h-10 bg-surface rounded shadow border border-line text-ink text-xl font-bold flex items-center justify-center hover:bg-paper" title="縮小">−</button>
+          <button onClick={handleZoomReset} className="w-10 h-10 bg-surface rounded shadow border border-line text-ink text-lg font-bold flex items-center justify-center hover:bg-paper" title="ズームリセット">⟲</button>
         </div>
     </div>
   );

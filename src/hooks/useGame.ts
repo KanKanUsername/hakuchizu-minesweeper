@@ -10,12 +10,13 @@ export interface CellState {
   isFlagged: boolean;
 }
 
-export type Difficulty = 'easy' | 'normal' | 'hard';
+export type Difficulty = 'easy' | 'normal' | 'hard' | 'extreme';
 
 export const DIFFICULTY_RATES: Record<Difficulty, number> = {
   easy: 0.10,
   normal: 0.15,
   hard: 0.20,
+  extreme: 0.26,
 };
 
 export function useGame(featureCodes: string[], adjacency: Record<string, string[]>, prefCode?: string, difficulty: Difficulty = 'normal') {
@@ -269,6 +270,73 @@ export function useGame(featureCodes: string[], adjacency: Record<string, string
     initBoard();
   };
 
+  const chordCell = (code: string) => {
+    if (status === 'cleared' || status === 'gameover' || isGenerating) return;
+    const cell = cells[code];
+    if (!cell || !cell.isOpen || cell.neighborMines === 0) return;
+
+    const neighbors = adjacency[code] || [];
+    let flaggedNeighbors = 0;
+    neighbors.forEach(n => {
+      if (cells[n]?.isFlagged) flaggedNeighbors++;
+    });
+
+    if (flaggedNeighbors === cell.neighborMines) {
+      const nextCells = { ...cells };
+      let hitMine = false;
+      const queue: string[] = [];
+
+      neighbors.forEach(n => {
+        if (!nextCells[n].isOpen && !nextCells[n].isFlagged) {
+          if (nextCells[n].isMine) {
+            hitMine = true;
+          } else {
+            queue.push(n);
+          }
+        }
+      });
+
+      if (hitMine) {
+         neighbors.forEach(n => {
+           if (!nextCells[n].isOpen && !nextCells[n].isFlagged && nextCells[n].isMine) {
+             nextCells[n].isOpen = true;
+           }
+         });
+         setCells(nextCells);
+         setStatus('gameover');
+         return;
+      }
+
+      if (queue.length === 0) return;
+
+      const visited = new Set<string>();
+      while (queue.length > 0) {
+        const curr = queue.shift()!;
+        if (visited.has(curr)) continue;
+        visited.add(curr);
+
+        if (!nextCells[curr].isOpen && !nextCells[curr].isFlagged) {
+          nextCells[curr].isOpen = true;
+        }
+
+        if (nextCells[curr].neighborMines === 0) {
+          (adjacency[curr] || []).forEach(neighbor => {
+            if (!nextCells[neighbor].isOpen && !nextCells[neighbor].isMine && !nextCells[neighbor].isFlagged) {
+              queue.push(neighbor);
+            }
+          });
+        }
+      }
+
+      const remainingSafeCells = Object.values(nextCells).filter(c => !c.isMine && !c.isOpen);
+      if (remainingSafeCells.length === 0) {
+        setStatus('cleared');
+      }
+
+      setCells(nextCells);
+    }
+  };
+
   const flaggedCount = Object.values(cells).filter(c => c.isFlagged).length;
 
   return {
@@ -280,6 +348,7 @@ export function useGame(featureCodes: string[], adjacency: Record<string, string
     highlightedCode,
     setHighlightedCode,
     openCell,
+    chordCell,
     toggleFlag,
     resetGame,
     totalMines,

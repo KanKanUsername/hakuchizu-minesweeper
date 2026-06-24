@@ -10,6 +10,7 @@
   --color-safe: var(--theme-safe);
   --color-line: var(--theme-line);
   --color-surface: var(--theme-surface);
+  --color-extreme: var(--theme-extreme);
   
   --color-map-unopened: var(--theme-map-unopened);
   --color-map-adjacent: var(--theme-map-adjacent);
@@ -25,8 +26,9 @@
   --theme-amber: #C97A2B;
   --theme-danger: #AD3F36;
   --theme-safe: #6C9A82;
-  --theme-line: #B9C7C1;
+  --theme-line: #92A8A0;
   --theme-surface: #ffffff;
+  --theme-extreme: #805AD5;
   
   /* Map states */
   --theme-map-unopened: #F6F2E8;
@@ -58,8 +60,9 @@
   --theme-amber: #E29B52;
   --theme-danger: #E66C63;
   --theme-safe: #8ABCA0;
-  --theme-line: #2E4057;
+  --theme-line: #445A75;
   --theme-surface: #1E2D40;
+  --theme-extreme: #B794F4;
   
   /* Map states */
   --theme-map-unopened: #23344B;
@@ -90,4 +93,8 @@ body {
   color: var(--theme-ink);
   font-family: "Hiragino Sans", "Yu Gothic", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+svg path {
+  vector-effect: non-scaling-stroke !important;
 }

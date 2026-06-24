@@ -78,6 +78,19 @@ export default function HowToPlayModal({ isOpen, onClose }: HowToPlayModalProps)
 
           <section>
             <h3 className="text-lg font-bold mb-3 flex items-center gap-2 border-b border-paper-deep pb-2">
+              <span className="text-[var(--theme-num-3)]">🏝️</span> 島国・海を隔てたマスの仕様
+            </h3>
+            <p className="leading-relaxed">
+              世界マップ等において、日本やイギリスなどの<strong>「他国と陸地で接していない島国」は、隣接マスが「0」</strong>という扱いになります。<br/>
+              そのため、島国を開けても周囲に連鎖して開くことはなく、また他の国のヒント数字から島国の安全性を推測することもできません。<br/>
+              <br/>
+              <strong>島国にも他のマスと全く同じ確率で地雷（爆弾）が隠されています。</strong><br/>
+              周囲の数字から地雷を推測できない「独立したマス」となるため、島国を開けるかどうかは、ゲーム終盤の「残りの地雷数」から論理的に絞り込むか、あるいは直感に頼る必要があります。
+            </p>
+          </section>
+
+          <section>
+            <h3 className="text-lg font-bold mb-3 flex items-center gap-2 border-b border-paper-deep pb-2">
               <span className="text-safe">💡</span> お助け機能
             </h3>
             <ul className="list-disc pl-5 space-y-2 leading-relaxed">

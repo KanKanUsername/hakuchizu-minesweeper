@@ -51,7 +51,14 @@ export const translations = {
     municipalityDesc: '都道府県を選ぶと、その中の市区町村でマインスイーパが遊べます',
     cells: 'マス',
     dailyTrivia: '💡 今日のプチ雑学',
-    adjacencyToggle: '隣接表示'
+    adjacencyToggle: '隣接表示',
+    rankingTitle: 'ランキング',
+    rankingEmpty: 'まだ記録がありません',
+    rankingError: '読み込みに失敗しました',
+    rankingNamePlaceholder: 'ニックネーム',
+    rankingSubmit: '登録',
+    rankingSubmitted: '🎉 {rank}位に登録されました！',
+    rankingNotImproved: '自己ベスト未更新のため登録されませんでした'
   },
   en: {
     menu: '≡ Menu',
@@ -103,7 +110,14 @@ export const translations = {
     municipalityDesc: 'Select a prefecture to play with its cities, towns & villages',
     cells: 'cells',
     dailyTrivia: '💡 Today\'s Trivia',
-    adjacencyToggle: 'Show Neighbors'
+    adjacencyToggle: 'Show Neighbors',
+    rankingTitle: 'Ranking',
+    rankingEmpty: 'No records yet',
+    rankingError: 'Failed to load',
+    rankingNamePlaceholder: 'Nickname',
+    rankingSubmit: 'Submit',
+    rankingSubmitted: '🎉 Ranked #{rank}!',
+    rankingNotImproved: 'Not submitted (slower than your best)'
   }
 };
 

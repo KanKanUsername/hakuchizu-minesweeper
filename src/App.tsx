@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Confetti from 'react-confetti';
 import MapBoard from './components/MapBoard';
 import RegionSelectModal from './components/RegionSelectModal';
@@ -9,6 +9,7 @@ import MenuModal from './components/MenuModal';
 import { useGame, type Difficulty } from './hooks/useGame';
 import { t, type Language } from './i18n';
 import { getMapName } from './data/prefList';
+import { recordGameEnd } from './lib/playStats';
 
 export default function App() {
   const [prefCode, setPrefCode] = useState<string>('JAPAN');
@@ -114,6 +115,24 @@ export default function App() {
     flaggedCount,
     isGenerating
   } = useGame(featureCodes, adjacency, prefCode || undefined, difficulty);
+
+  // Record local play metrics once per finished game (retention validation, see docs/retention-metrics.md)
+  const statsRecordedRef = useRef(false);
+  useEffect(() => {
+    if (status !== 'cleared' && status !== 'gameover') {
+      statsRecordedRef.current = false;
+      return;
+    }
+    if (statsRecordedRef.current) return;
+    statsRecordedRef.current = true;
+    recordGameEnd({
+      mapId: prefCode || 'JAPAN',
+      difficulty,
+      result: status,
+      timeSec: time,
+      openedCodes: Object.values(cells).filter(c => c.isOpen && !c.isMine).map(c => c.code),
+    });
+  }, [status, prefCode, difficulty, time, cells]);
 
   // Compute trivia for result screen
   const dailyTrivia = useMemo(() => {

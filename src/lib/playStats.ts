@@ -21,6 +21,7 @@ export interface PlayStats {
   totals: { plays: number; clears: number; gameovers: number; totalTimeSec: number };
   maps: Record<string, MapPlayStats>;
   openedCodes: Record<string, string[]>;
+  mapTotals: Record<string, number>;
 }
 
 export interface GameEndRecord {
@@ -29,6 +30,7 @@ export interface GameEndRecord {
   result: 'cleared' | 'gameover';
   timeSec: number;
   openedCodes: string[];
+  totalCells: number;
 }
 
 export interface PlayStatsSummary {
@@ -50,6 +52,7 @@ function emptyStats(): PlayStats {
     totals: { plays: 0, clears: 0, gameovers: 0, totalTimeSec: 0 },
     maps: {},
     openedCodes: {},
+    mapTotals: {},
   };
 }
 
@@ -59,6 +62,7 @@ export function getPlayStats(): PlayStats {
     if (!raw) return emptyStats();
     const parsed = JSON.parse(raw) as PlayStats;
     if (parsed.version !== 1) return emptyStats();
+    parsed.mapTotals = parsed.mapTotals ?? {};
     return parsed;
   } catch {
     return emptyStats();
@@ -128,6 +132,9 @@ export function recordGameEnd(record: GameEndRecord): void {
   const opened = new Set(stats.openedCodes[record.mapId] ?? []);
   record.openedCodes.forEach(code => opened.add(code));
   stats.openedCodes[record.mapId] = [...opened].slice(0, MAX_OPENED_CODES_PER_MAP);
+  if (record.totalCells > 0) {
+    stats.mapTotals[record.mapId] = record.totalCells;
+  }
 
   save(stats);
 }

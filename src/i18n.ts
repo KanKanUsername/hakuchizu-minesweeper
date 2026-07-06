@@ -58,7 +58,13 @@ export const translations = {
     rankingNamePlaceholder: 'ニックネーム',
     rankingSubmit: '登録',
     rankingSubmitted: '🎉 {rank}位に登録されました！',
-    rankingNotImproved: '自己ベスト未更新のため登録されませんでした'
+    rankingNotImproved: '自己ベスト未更新のため登録されませんでした',
+    collectionMenu: '開放コレクション',
+    collectionTitle: '開放コレクション',
+    collectionEmpty: 'まだ開放した地域がありません。まずは1プレイ！',
+    collectionJapanProgress: '{total}都道府県中 {count} 県を開放',
+    collectionUnopened: 'まだ見ぬ土地',
+    collectionOtherMaps: 'マップ別の開放状況'
   },
   en: {
     menu: '≡ Menu',
@@ -117,7 +123,13 @@ export const translations = {
     rankingNamePlaceholder: 'Nickname',
     rankingSubmit: 'Submit',
     rankingSubmitted: '🎉 Ranked #{rank}!',
-    rankingNotImproved: 'Not submitted (slower than your best)'
+    rankingNotImproved: 'Not submitted (slower than your best)',
+    collectionMenu: 'Collection',
+    collectionTitle: 'Region Collection',
+    collectionEmpty: 'No regions opened yet. Play a round first!',
+    collectionJapanProgress: '{count} of {total} prefectures opened',
+    collectionUnopened: 'Uncharted lands',
+    collectionOtherMaps: 'Progress by Map'
   }
 };
 

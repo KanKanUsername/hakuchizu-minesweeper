@@ -6,6 +6,7 @@ import HowToPlayModal from './components/HowToPlayModal';
 import AboutModal from './components/AboutModal';
 import FeedbackModal from './components/FeedbackModal';
 import MenuModal from './components/MenuModal';
+import CollectionModal from './components/CollectionModal';
 import { useGame, type Difficulty } from './hooks/useGame';
 import { t, type Language } from './i18n';
 import { getMapName } from './data/prefList';
@@ -22,6 +23,7 @@ export default function App() {
   const [showAbout, setShowAbout] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showCollection, setShowCollection] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('theme') === 'dark';
   });
@@ -131,6 +133,7 @@ export default function App() {
       result: status,
       timeSec: time,
       openedCodes: Object.values(cells).filter(c => c.isOpen && !c.isMine).map(c => c.code),
+      totalCells: Object.keys(cells).length,
     });
   }, [status, prefCode, difficulty, time, cells]);
 
@@ -373,9 +376,11 @@ export default function App() {
         onOpenHowToPlay={() => setShowHowToPlay(true)}
         onOpenAbout={() => setShowAbout(true)}
         onOpenFeedback={() => setShowFeedback(true)}
+        onOpenCollection={() => setShowCollection(true)}
         language={language}
         setLanguage={setLanguage}
       />
+      <CollectionModal isOpen={showCollection} onClose={() => setShowCollection(false)} language={language} />
       <RegionSelectModal 
         isOpen={showRegionSelect} 
         onClose={() => setShowRegionSelect(false)} 

@@ -12,6 +12,7 @@ import { useGame, type Difficulty } from './hooks/useGame';
 import { t, type Language } from './i18n';
 import { getMapName } from './data/prefList';
 import { recordGameEnd } from './lib/playStats';
+import { buildShareText, buildShareUrlText } from './lib/share';
 
 export default function App() {
   const [prefCode, setPrefCode] = useState<string>('JAPAN');
@@ -26,6 +27,7 @@ export default function App() {
   const [showMenu, setShowMenu] = useState(false);
   const [showCollection, setShowCollection] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('theme') === 'dark';
   });
@@ -325,15 +327,33 @@ export default function App() {
 
                 <div className="flex flex-col gap-3 w-full">
                    {status === 'cleared' && (
-                     <a 
-                       href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(t(language, 'shareText', { map: getMapName(prefCode, geoJson?.pref_name, language), time: time }))}\n\n#白地図マインスイーパ\n${window.location.href}`}
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       className="w-full py-3.5 bg-ink text-surface rounded-xl font-bold hover:bg-ink-soft transition-transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
-                     >
-                       <svg viewBox="0 0 24 24" aria-hidden="true" className="w-5 h-5 fill-current"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.008 5.964H5.078z"></path></svg>
-                       {t(language, 'shareBtn')}
-                     </a>
+                     <>
+                       <div className="w-full text-left bg-paper p-3 rounded-xl border border-paper-deep font-mono text-xs text-ink whitespace-pre-line select-all">
+                         {buildShareText({ mapId: prefCode, mapName: getMapName(prefCode, geoJson?.pref_name, language), timeSec: time, isNewRecord, language })}
+                       </div>
+                       <a
+                         href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(buildShareUrlText({ mapId: prefCode, mapName: getMapName(prefCode, geoJson?.pref_name, language), timeSec: time, isNewRecord, language }))}`}
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         className="w-full py-3.5 bg-ink text-surface rounded-xl font-bold hover:bg-ink-soft transition-transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
+                       >
+                         <svg viewBox="0 0 24 24" aria-hidden="true" className="w-5 h-5 fill-current"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.008 5.964H5.078z"></path></svg>
+                         {t(language, 'shareBtn')}
+                       </a>
+                       <button
+                         onClick={() => {
+                           navigator.clipboard?.writeText(
+                             buildShareUrlText({ mapId: prefCode, mapName: getMapName(prefCode, geoJson?.pref_name, language), timeSec: time, isNewRecord, language })
+                           ).then(() => {
+                             setShareCopied(true);
+                             setTimeout(() => setShareCopied(false), 2000);
+                           }).catch(() => {});
+                         }}
+                         className="w-full py-3 bg-paper text-ink border border-paper-deep rounded-xl font-bold hover:bg-paper-deep transition-colors flex items-center justify-center gap-2"
+                       >
+                         {shareCopied ? `✓ ${t(language, 'shareCopied')}` : `📋 ${t(language, 'shareCopy')}`}
+                       </button>
+                     </>
                    )}
                    <button 
                     onClick={resetGame}

@@ -19,12 +19,16 @@ function ProgressBar({ ratio }: { ratio: number }) {
   );
 }
 
+const MAX_UNOPENED_CHIPS = 12;
+
 export default function CollectionModal({ isOpen, onClose, language }: CollectionModalProps) {
-  const { japan, maps, hasAnyProgress } = useCollection();
+  const { japan, maps, overall, hasAnyProgress } = useCollection();
 
   if (!isOpen) return null;
 
   const japanRatio = japan.totalCount > 0 ? japan.openedCount / japan.totalCount : 0;
+  const visibleUnopened = japan.unopened.slice(0, MAX_UNOPENED_CHIPS);
+  const hiddenUnopenedCount = japan.unopened.length - visibleUnopened.length;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-ink/60 backdrop-blur-sm" onClick={onClose}>
@@ -44,6 +48,20 @@ export default function CollectionModal({ isOpen, onClose, language }: Collectio
           {hasAnyProgress && (
             <>
               <section>
+                <div className="px-2 pb-1 space-y-1.5">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-xs font-bold text-ink-soft uppercase tracking-wider">
+                      {t(language, 'collectionOverall')}
+                    </span>
+                    <span className="text-xs font-mono text-ink-soft">
+                      {overall.openedCount} / {overall.totalCount}
+                    </span>
+                  </div>
+                  <ProgressBar ratio={overall.ratio} />
+                </div>
+              </section>
+
+              <section>
                 <h3 className="text-xs font-bold text-ink-soft uppercase tracking-wider mb-3 px-2">
                   {t(language, 'japanMap')}
                 </h3>
@@ -51,6 +69,7 @@ export default function CollectionModal({ isOpen, onClose, language }: Collectio
                   <div className="flex items-baseline justify-between">
                     <span className="font-bold text-ink">
                       {t(language, 'collectionJapanProgress', { count: japan.openedCount, total: japan.totalCount })}
+                      {japanRatio === 1 && <span className="ml-1">🏆</span>}
                     </span>
                     <span className="text-xs font-mono text-ink-soft">{Math.round(japanRatio * 100)}%</span>
                   </div>
@@ -61,11 +80,16 @@ export default function CollectionModal({ isOpen, onClose, language }: Collectio
                         {t(language, 'collectionUnopened')}
                       </p>
                       <div className="flex flex-wrap gap-1">
-                        {japan.unopened.map(p => (
+                        {visibleUnopened.map(p => (
                           <span key={p.code} className="px-2 py-0.5 rounded-full text-[10px] border border-dashed border-line text-ink-soft bg-paper-deep/50">
                             {language === 'en' ? p.nameEn : p.name}
                           </span>
                         ))}
+                        {hiddenUnopenedCount > 0 && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-ink-soft bg-paper-deep/50">
+                            +{hiddenUnopenedCount}
+                          </span>
+                        )}
                       </div>
                     </div>
                   )}
@@ -83,6 +107,7 @@ export default function CollectionModal({ isOpen, onClose, language }: Collectio
                         <div className="flex items-baseline justify-between gap-2">
                           <span className="min-w-0 truncate text-sm font-bold text-ink">
                             {getMapName(m.mapId, undefined, language)}
+                            {m.ratio === 1 && <span className="ml-1">🏆</span>}
                           </span>
                           <span className="shrink-0 text-xs font-mono text-ink-soft">
                             {m.totalCount !== null

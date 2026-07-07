@@ -64,7 +64,8 @@ export const translations = {
     collectionEmpty: 'まだ開放した地域がありません。まずは1プレイ！',
     collectionJapanProgress: '{total}都道府県中 {count} 県を開放',
     collectionUnopened: 'まだ見ぬ土地',
-    collectionOtherMaps: 'マップ別の開放状況'
+    collectionOtherMaps: 'マップ別の開放状況',
+    collectionOverall: '全体の開放率'
   },
   en: {
     menu: '≡ Menu',
@@ -129,7 +130,8 @@ export const translations = {
     collectionEmpty: 'No regions opened yet. Play a round first!',
     collectionJapanProgress: '{count} of {total} prefectures opened',
     collectionUnopened: 'Uncharted lands',
-    collectionOtherMaps: 'Progress by Map'
+    collectionOtherMaps: 'Progress by Map',
+    collectionOverall: 'Overall Progress'
   }
 };
 

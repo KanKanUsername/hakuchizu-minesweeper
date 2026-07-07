@@ -14,9 +14,16 @@ export interface JapanCollection {
   unopened: { code: string; name: string; nameEn: string }[];
 }
 
+export interface CollectionOverall {
+  openedCount: number;
+  totalCount: number;
+  ratio: number;
+}
+
 export interface CollectionData {
   japan: JapanCollection;
   maps: CollectionMapEntry[];
+  overall: CollectionOverall;
   hasAnyProgress: boolean;
 }
 
@@ -51,9 +58,18 @@ export function useCollection(): CollectionData {
     })
     .sort((a, b) => b.openedCount - a.openedCount);
 
+  const knownMaps = maps.filter(m => m.totalCount !== null);
+  const overallOpened = japan.openedCount + knownMaps.reduce((sum, m) => sum + m.openedCount, 0);
+  const overallTotal = japan.totalCount + knownMaps.reduce((sum, m) => sum + (m.totalCount ?? 0), 0);
+
   return {
     japan,
     maps,
+    overall: {
+      openedCount: overallOpened,
+      totalCount: overallTotal,
+      ratio: overallTotal > 0 ? overallOpened / overallTotal : 0,
+    },
     hasAnyProgress: japanOpened.size > 0 || maps.length > 0,
   };
 }

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Confetti from 'react-confetti';
 import MapBoard from './components/MapBoard';
 import RegionSelectModal from './components/RegionSelectModal';
@@ -6,9 +6,13 @@ import HowToPlayModal from './components/HowToPlayModal';
 import AboutModal from './components/AboutModal';
 import FeedbackModal from './components/FeedbackModal';
 import MenuModal from './components/MenuModal';
+import CollectionModal from './components/CollectionModal';
+import StatsModal from './components/StatsModal';
 import { useGame, type Difficulty } from './hooks/useGame';
 import { t, type Language } from './i18n';
 import { getMapName } from './data/prefList';
+import { recordGameEnd } from './lib/playStats';
+import { buildShareText, buildShareUrlText } from './lib/share';
 
 export default function App() {
   const [prefCode, setPrefCode] = useState<string>('JAPAN');
@@ -21,6 +25,9 @@ export default function App() {
   const [showAbout, setShowAbout] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showCollection, setShowCollection] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('theme') === 'dark';
   });
@@ -114,6 +121,25 @@ export default function App() {
     flaggedCount,
     isGenerating
   } = useGame(featureCodes, adjacency, prefCode || undefined, difficulty);
+
+  // Record local play metrics once per finished game (retention validation, see docs/retention-metrics.md)
+  const statsRecordedRef = useRef(false);
+  useEffect(() => {
+    if (status !== 'cleared' && status !== 'gameover') {
+      statsRecordedRef.current = false;
+      return;
+    }
+    if (statsRecordedRef.current) return;
+    statsRecordedRef.current = true;
+    recordGameEnd({
+      mapId: prefCode || 'JAPAN',
+      difficulty,
+      result: status,
+      timeSec: time,
+      openedCodes: Object.values(cells).filter(c => c.isOpen && !c.isMine).map(c => c.code),
+      totalCells: Object.keys(cells).length,
+    });
+  }, [status, prefCode, difficulty, time, cells]);
 
   // Compute trivia for result screen
   const dailyTrivia = useMemo(() => {
@@ -301,15 +327,33 @@ export default function App() {
 
                 <div className="flex flex-col gap-3 w-full">
                    {status === 'cleared' && (
-                     <a 
-                       href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(t(language, 'shareText', { map: getMapName(prefCode, geoJson?.pref_name, language), time: time }))}\n\n#白地図マインスイーパ\n${window.location.href}`}
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       className="w-full py-3.5 bg-ink text-surface rounded-xl font-bold hover:bg-ink-soft transition-transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
-                     >
-                       <svg viewBox="0 0 24 24" aria-hidden="true" className="w-5 h-5 fill-current"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.008 5.964H5.078z"></path></svg>
-                       {t(language, 'shareBtn')}
-                     </a>
+                     <>
+                       <div className="w-full text-left bg-paper p-3 rounded-xl border border-paper-deep font-mono text-xs text-ink whitespace-pre-line select-all">
+                         {buildShareText({ mapId: prefCode, mapName: getMapName(prefCode, geoJson?.pref_name, language), timeSec: time, isNewRecord, language })}
+                       </div>
+                       <a
+                         href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(buildShareUrlText({ mapId: prefCode, mapName: getMapName(prefCode, geoJson?.pref_name, language), timeSec: time, isNewRecord, language }))}`}
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         className="w-full py-3.5 bg-ink text-surface rounded-xl font-bold hover:bg-ink-soft transition-transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
+                       >
+                         <svg viewBox="0 0 24 24" aria-hidden="true" className="w-5 h-5 fill-current"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.008 5.964H5.078z"></path></svg>
+                         {t(language, 'shareBtn')}
+                       </a>
+                       <button
+                         onClick={() => {
+                           navigator.clipboard?.writeText(
+                             buildShareUrlText({ mapId: prefCode, mapName: getMapName(prefCode, geoJson?.pref_name, language), timeSec: time, isNewRecord, language })
+                           ).then(() => {
+                             setShareCopied(true);
+                             setTimeout(() => setShareCopied(false), 2000);
+                           }).catch(() => {});
+                         }}
+                         className="w-full py-3 bg-paper text-ink border border-paper-deep rounded-xl font-bold hover:bg-paper-deep transition-colors flex items-center justify-center gap-2"
+                       >
+                         {shareCopied ? `✓ ${t(language, 'shareCopied')}` : `📋 ${t(language, 'shareCopy')}`}
+                       </button>
+                     </>
                    )}
                    <button 
                     onClick={resetGame}
@@ -354,9 +398,13 @@ export default function App() {
         onOpenHowToPlay={() => setShowHowToPlay(true)}
         onOpenAbout={() => setShowAbout(true)}
         onOpenFeedback={() => setShowFeedback(true)}
+        onOpenCollection={() => setShowCollection(true)}
+        onOpenStats={() => setShowStats(true)}
         language={language}
         setLanguage={setLanguage}
       />
+      <CollectionModal isOpen={showCollection} onClose={() => setShowCollection(false)} language={language} />
+      <StatsModal isOpen={showStats} onClose={() => setShowStats(false)} language={language} />
       <RegionSelectModal 
         isOpen={showRegionSelect} 
         onClose={() => setShowRegionSelect(false)} 

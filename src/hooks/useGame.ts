@@ -1,6 +1,16 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 
 export type GameStatus = 'idle' | 'playing' | 'cleared' | 'gameover';
+
+declare global {
+  interface Window {
+    __hakuchizuGame?: {
+      getCells: () => Record<string, CellState>;
+      openCell: (code: string) => void;
+      status: GameStatus;
+    };
+  }
+}
 
 export interface CellState {
   code: string;
@@ -338,6 +348,21 @@ export function useGame(featureCodes: string[], adjacency: Record<string, string
   };
 
   const flaggedCount = Object.values(cells).filter(c => c.isFlagged).length;
+
+  // Dev-only test hook: lets automated tooling (e.g. screenshot solver) read the
+  // true board and drive plays. Tree-shaken out of production builds.
+  const cellsRef = useRef(cells);
+  cellsRef.current = cells;
+  const openCellRef = useRef(openCell);
+  openCellRef.current = openCell;
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    window.__hakuchizuGame = {
+      getCells: () => cellsRef.current,
+      openCell: (code: string) => openCellRef.current(code),
+      status,
+    };
+  }, [status]);
 
   return {
     status,

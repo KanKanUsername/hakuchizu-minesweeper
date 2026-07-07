@@ -11,13 +11,14 @@ interface MenuModalProps {
   onOpenAbout: () => void;
   onOpenFeedback: () => void;
   onOpenCollection: () => void;
+  onOpenStats: () => void;
   language: Language;
   setLanguage: (lang: Language) => void;
 }
 
 export default function MenuModal({
   isOpen, onClose, isDarkMode, onToggleTheme, isLongPressEnabled, onToggleLongPress,
-  onOpenHowToPlay, onOpenAbout, onOpenFeedback, onOpenCollection, language, setLanguage
+  onOpenHowToPlay, onOpenAbout, onOpenFeedback, onOpenCollection, onOpenStats, language, setLanguage
 }: MenuModalProps) {
   if (!isOpen) return null;
   
@@ -92,6 +93,10 @@ export default function MenuModal({
               <button onClick={() => { onOpenCollection(); onClose(); }} className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-paper transition-colors text-left border border-transparent hover:border-line text-ink">
                 <span className="text-xl">🗺️</span>
                 <span className="font-bold text-ink">{t(language, 'collectionMenu')}</span>
+              </button>
+              <button onClick={() => { onOpenStats(); onClose(); }} className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-paper transition-colors text-left border border-transparent hover:border-line text-ink">
+                <span className="text-xl">📊</span>
+                <span className="font-bold text-ink">{t(language, 'statsMenu')}</span>
               </button>
               <button onClick={() => { onOpenHowToPlay(); onClose(); }} className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-paper transition-colors text-left border border-transparent hover:border-line text-ink">
                 <span className="text-xl">📖</span>

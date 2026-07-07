@@ -65,7 +65,20 @@ export const translations = {
     collectionJapanProgress: '{total}都道府県中 {count} 県を開放',
     collectionUnopened: 'まだ見ぬ土地',
     collectionOtherMaps: 'マップ別の開放状況',
-    collectionOverall: '全体の開放率'
+    collectionOverall: '全体の開放率',
+    statsMenu: 'プレイ統計',
+    statsTitle: 'プレイ統計',
+    statsEmpty: 'まだプレイ記録がありません。まずは1プレイ！',
+    statsTotalPlays: 'プレイ回数',
+    statsClearRate: 'クリア率',
+    statsAvgTime: '平均タイム',
+    statsActiveDays: 'プレイ日数',
+    statsLast7Days: '直近7日',
+    statsTotalTime: '総プレイ時間',
+    statsByMap: 'マップ別の成績',
+    statsColMap: 'マップ',
+    statsColPlays: '回数',
+    statsColClears: 'クリア'
   },
   en: {
     menu: '≡ Menu',
@@ -131,7 +144,20 @@ export const translations = {
     collectionJapanProgress: '{count} of {total} prefectures opened',
     collectionUnopened: 'Uncharted lands',
     collectionOtherMaps: 'Progress by Map',
-    collectionOverall: 'Overall Progress'
+    collectionOverall: 'Overall Progress',
+    statsMenu: 'Play Stats',
+    statsTitle: 'Play Stats',
+    statsEmpty: 'No play records yet. Play a round first!',
+    statsTotalPlays: 'Plays',
+    statsClearRate: 'Clear Rate',
+    statsAvgTime: 'Avg Time',
+    statsActiveDays: 'Active Days',
+    statsLast7Days: 'Last 7 Days',
+    statsTotalTime: 'Total Time',
+    statsByMap: 'Stats by Map',
+    statsColMap: 'Map',
+    statsColPlays: 'Plays',
+    statsColClears: 'Clears'
   }
 };
 

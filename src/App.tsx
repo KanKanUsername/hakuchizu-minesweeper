@@ -7,6 +7,7 @@ import AboutModal from './components/AboutModal';
 import FeedbackModal from './components/FeedbackModal';
 import MenuModal from './components/MenuModal';
 import CollectionModal from './components/CollectionModal';
+import StatsModal from './components/StatsModal';
 import { useGame, type Difficulty } from './hooks/useGame';
 import { t, type Language } from './i18n';
 import { getMapName } from './data/prefList';
@@ -24,6 +25,7 @@ export default function App() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showCollection, setShowCollection] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('theme') === 'dark';
   });
@@ -377,10 +379,12 @@ export default function App() {
         onOpenAbout={() => setShowAbout(true)}
         onOpenFeedback={() => setShowFeedback(true)}
         onOpenCollection={() => setShowCollection(true)}
+        onOpenStats={() => setShowStats(true)}
         language={language}
         setLanguage={setLanguage}
       />
       <CollectionModal isOpen={showCollection} onClose={() => setShowCollection(false)} language={language} />
+      <StatsModal isOpen={showStats} onClose={() => setShowStats(false)} language={language} />
       <RegionSelectModal 
         isOpen={showRegionSelect} 
         onClose={() => setShowRegionSelect(false)} 

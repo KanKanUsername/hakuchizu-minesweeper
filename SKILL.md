@@ -3,7 +3,12 @@
 > 対象: このリポジトリを引き継ぐ開発者(人間・AIエージェント問わず)。
 > 目的: システム構成の選定理由、棄却済み代替案、運用の暗黙ルール、技術的負債を
 > 「退職するシニアエンジニアの引き継ぎ」水準で残す。
-> 最終更新: 2026-07-07(PR #1 マージ直後)
+> 最終更新: 2026-07-07(v2: 事実誤りの修正 + 問題・改善バックログの優先度付け)
+>
+> **この文書自身の運用ルール**: 記述は実コードで裏取りしてから書く(v1 は海上境界の
+> 挙動と ESLint 件数を推測で書いて誤っていた — v2 で修正済み)。コードを変えたら
+> 対応する節を同じPRで更新する。「たぶんこう」を書かず、確認できないことは
+> 「未確認」と明記する。
 
 ---
 
@@ -30,7 +35,7 @@
 | React 19 + TypeScript | 複雑なゲーム状態(開閉・フラグ・地雷)の宣言的管理と型安全 | tsconfig に `strict` は無いが `verbatimModuleSyntax`・`erasableSyntaxOnly`・`noUnusedLocals` 有効。**型は `import type` で読むこと** |
 | Vite 8 | 高速HMRとビルド | 設定は素の `vite.config.ts`(react + tailwind プラグインのみ)。ビルドは `tsc -b && vite build` |
 | D3.js (d3-geo / d3-zoom) | GeoJSON の投影・SVG path 描画、ピンチズーム/パン | ズーム倍率は CSS 変数 `--zoom-scale` に流し込み、地名テキストの opacity を CSS calc で制御(ReactレンダリングなしでFPS維持) |
-| Tailwind CSS v4 | 高速なスタイリング、ダークモード | **生パレット(gray-500等)禁止**。プロジェクト固有トークンを使う: `bg-surface / bg-paper / bg-paper-deep / text-ink / text-ink-soft / border-line / border-paper-deep / bg-amber / text-danger / text-safe`。ダークモードは `data-theme="dark"` 属性で切替 |
+| Tailwind CSS v4 | 高速なスタイリング、ダークモード | **生パレット(gray-500等)禁止**。プロジェクト固有トークンを使う: `bg-surface / bg-paper / bg-paper-deep / text-ink / text-ink-soft / border-line / border-paper-deep / bg-amber / text-danger / text-safe`。**定義は `src/index.css`**(`--theme-*` を Tailwind の `--color-*` にマップ)。ダークモードは `:root[data-theme="dark"]` で `--theme-*` を上書きする方式。色を足すときは index.css に `--theme-xxx` と `--color-xxx` の両方を追加 |
 | Vercel | `main` push だけで本番デプロイ、ゼロ設定CI/CD | `vercel.json` なし(全デフォルト)。**Production Branch = main** |
 | **バックエンドなし** | 予算ゼロ・個人運用のため、意図的にサーバーレス(サーバー無し)構成 | すべて localStorage 完結。外部送信ゼロがプレイヤーへの約束 |
 
@@ -55,10 +60,14 @@
   隣接リストを生成 → `src/data/adjacency/*.json`
 - `generateJapan.mjs` / `generateRegions.mjs`: 都道府県/地方マップの GeoJSON 生成
   → `src/data/prefectures/*.json`(59ファイル: 47都道府県 + R01-R09地方 + WORLD/EUROPE/USA)
-- `scripts/add_maritime_borders.cjs`: **海上境界の追加**。世界/ヨーロッパマップで
-  「孤島(隣接ゼロ)は運ゲーになる」問題を解決するため、海を挟んだ国同士に人工的な隣接を
-  張っている(例: 日本↔韓国)。**孤島の扱いはゲーム性の根幹**なので、マップ追加時は必ず
-  隣接ゼロのセルが無いか確認すること(`useGame.ts` は隣接ゼロセルに地雷を置かない防御もある)
+- `scripts/add_maritime_borders.cjs`: **海上境界の追加**(対象は `['WORLD', 'EUROPE']` のみ。
+  **USA は対象外**)。「盤面が複数の島(連結成分)に分かれていると、島同士を跨ぐ推理ができず
+  運ゲーになる」問題を解決する。アルゴリズムは、隣接グラフの連結成分をBFSで求め、
+  成分が1つになるまで「component[0] と残り全体の間で**最も近い点ペア**を探して橋渡し(相互に
+  隣接追加)」を貪欲に繰り返す(特定の国ペアをハードコードしているわけではない。性能のため
+  各国の境界点は最大100点にサンプリング)。**孤島/連結性はゲーム性の根幹**なので、マップ追加時は
+  必ずこのスクリプトを通し、隣接ゼロや複数連結成分が残らないか確認すること
+  (`useGame.ts` は隣接ゼロセルに地雷を置かない防御もあるが、連結成分跨ぎの運ゲーは防げない)
 
 **罠**: 地方マップ(R01-R09)は都道府県の集合に見えるが、実際のセルは**市区町村**
 (95〜194セル)。「小さいマップ」は存在しない(最小は鳥取県の19市区町村)。
@@ -159,24 +168,37 @@ SKILL.md              ← 本書
 
 ---
 
-## 8. 技術的負債(正直な台帳)
+## 8. 問題・改善バックログ(優先度付き)
 
-1. **ESLint ベースライン違反 約20件**(`App.tsx` / `MapBoard.tsx` / `useGame.ts`):
-   `no-explicit-any` と `react-hooks/set-state-in-effect`。**lint はビルドゲートに入っていない**
-   (`npm run build` = tsc+vite のみ)。新規コードはクリーンを維持する紳士協定。
-   既存分を直すなら geoJson の型付け(`Feature<Geometry, {code,name,...}>`)から。
-2. **ベストタイムの二重管理**: `useGame` が `hakuchizu-best-*` キーを直接管理し、
-   `playStats.maps[key].bestTimeSec` にも同じ情報が入る。表示は前者、統計は後者。
-   統合するなら playStats 側に寄せるが、既存キーのマイグレーションが必要。
-3. **テストが無い**: 検証は Playwright の使い捨てスクリプト(scratchpad)+実機確認のみ。
-   最優先でテスト化すべきは `useGame` のソルバー(`isSolvable`)と `playStats` のマイグレーション。
-4. **バンドルサイズ警告**: チャンク500KB超(D3+全国GeoJSON+firebase)。実害はまだ無いが、
-   firebase を動的 import にすれば凍結中のコードを本番バンドルから追い出せる(最も費用対効果が高い改善)。
-5. **i18n の仮文言**: コレクション/統計画面の文言は ChatGPT 採用セット待ちのプレースホルダ
-   (`collectionUnopened: 'まだ見ぬ土地'` 等)。差し替えは i18n.ts の値のみ変更、キー名は変えない。
-6. **`hakuchizuStats()` / `__hakuchizuGame` の window 汚染**: 前者は本番にも存在(テスター用に意図的)。
-   後者は `import.meta.env.DEV` ガード済みで本番には出ない。
-7. **ビルドが遅い**(このリポジトリで約2分、Tailwind生成が72%)。CI導入時はキャッシュ必須。
+深刻度(Sev)= ユーザー影響/リスクの大きさ、工数 = 目安。**上から着手する。**
+バグ(壊れる可能性)を機能改善より上に置いている。
+
+### P0 — 着手すべき(リスクが実在)
+
+| # | 問題 | Sev | 工数 | 最初の一歩 |
+| --- | --- | --- | --- | --- |
+| P0-1 | **No-Guess フォールバックの黙認**: `isSolvable` が200回失敗すると `console.warn` を出して**運ゲー盤面のまま続行**する。市区町村モード(数百セル)や extreme で発生しやすく、「論理で解ける」というプロダクトの約束が静かに破れる。頻度・発生マップが未計測。 | 高 | 中 | まず計測: フォールバック発生時に `playStats` へカウンタを1つ足し、`hakuchizuStats()` に出す。頻度が高いマップが判明したら、試行上限を上げるか mine 率を動的に下げる |
+| P0-2 | **自動テストがゼロ**: 検証は使い捨て Playwright + 目視のみ。`useGame` のソルバー/BFS開放/クリア判定と `playStats` のマイグレーションは、壊れても誰も気づかない。 | 高 | 中 | Vitest を devDep に追加し、まず純関数の `isSolvable`(既知の盤面で solvable/unsolvable を assert)と `playStats` のマイグレーション(v1→将来 v2)から。UI は後回しでよい |
+| P0-3 | **ベストタイムの二重管理**: `useGame` が `hakuchizu-best-*` を直接書き、`playStats.maps[].bestTimeSec` にも別経路で入る。ズレると「統計のベスト」と「クリア画面のベスト」が食い違う。特に片方だけ消えた/移行した端末で不整合。 | 中 | 中 | 単一の情報源(playStats 側)に寄せ、`hakuchizu-best-*` は読み取り時のフォールバックとして残す。移行コードを playStats マイグレーションに同梱 |
+
+### P1 — やる価値が高い(費用対効果◎)
+
+| # | 改善 | Sev | 工数 | 最初の一歩 |
+| --- | --- | --- | --- | --- |
+| P1-1 | **firebase を動的 import 化**: 凍結中(§6)の firebase が本番バンドルに常時同梱され、チャンク500KB超の主因の一つ。`isRankingEnabled` が false の間はロードすらしない形にできる。 | 中 | 小 | `firebase.ts` の各 `firebase/*` import を、関数内 `await import(...)` に変える。`isRankingEnabled` ガードは既にあるので影響は局所的 |
+| P1-2 | **ESLint ベースライン違反 23件**(error 22 + warning 1、内訳 `no-explicit-any` 16 / `set-state-in-effect` 4 / `exhaustive-deps` 1。`App.tsx`/`MapBoard.tsx`/`useGame.ts`)。**lint はビルドゲート外**(`build` は tsc+vite のみ)なので気づかず増える。新規コードはクリーン維持の紳士協定のみが歯止め。 | 中 | 中 | 最大の `any`(16件)から。GeoJSON を `FeatureCollection<Geometry, {code:string; name:string; trivia?:string}>` で型付けすれば大半が消える。片付いたら CI に `npm run lint` を追加してリグレッションを止める |
+| P1-3 | **CI が無い**: PR の型/ビルド/lint チェックが自動で走らない。壊れた PR が main=本番に直行しうる。 | 中 | 小 | GitHub Actions で `npm ci && npm run build`(+ P1-2 後に lint)。ビルドは約2分・Tailwind 生成が72%なのでキャッシュ必須 |
+
+### P2 — 余裕があれば/外部入力待ち
+
+| # | 改善 | Sev | 工数 | 最初の一歩 |
+| --- | --- | --- | --- | --- |
+| P2-1 | **i18n の仮文言**: コレクション/統計画面は ChatGPT 採用セット待ちのプレースホルダ(`collectionUnopened: 'まだ見ぬ土地'` 等)。**値のみ差し替え、キー名は変えない**。 | 低 | 小 | `docs/multi-agent-prompts.json` の chatgpt を実行 → `i18n_replacements` を i18n.ts に反映 |
+| P2-2 | **未開放チップの言語追従が JAPAN のみ**: 他マップの地域名は `getMapName` 依存で、市区町村レベルの英語名が無い箇所がある。世界地図の英語圏展開時に表面化(が、日本集中方針なので今は低優先)。 | 低 | 中 | 英語圏に舵を切る判断が出てから。それまで着手しない(§7の方針) |
+| P2-3 | **`hakuchizuStats()` の window 汚染**: テスター用に本番にも意図的に露出。将来的にゲート判定 UI(統計画面内のエクスポートボタン)へ移せば window を汚さずに済む。`__hakuchizuGame` は `import.meta.env.DEV` ガード済みで本番には出ない(問題なし)。 | 低 | 小 | StatsModal に「統計をコピー/共有」ボタンを追加し、window 関数は将来削除 |
+
+> **運用メモ**: このバックログは「今わかっている」もの。P0-1 の頻度計測のように、
+> **まず計測してから直す**のがこのプロジェクトの流儀(§6 のリテンションゲートと同じ思想)。
 
 ---
 
@@ -262,7 +284,7 @@ firebase の動的 import 化、useGame ソルバーのユニットテスト。
 npm install
 npm run dev            # http://localhost:5173
 npm run build          # tsc + vite。これが通れば型は健全(約2分)
-npx eslint src/        # 既存エラー約20件は仕様(§8-1)。増やさなければOK
+npx eslint src/        # 既存23件(error22+warn1)はベースライン(§8 P1-2)。増やさなければOK
 ```
 
 1. 遊ぶ(初級で1クリア)→ メニューから開放コレクションとプレイ統計を開く

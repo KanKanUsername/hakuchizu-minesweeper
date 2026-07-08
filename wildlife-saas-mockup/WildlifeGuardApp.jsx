@@ -34,6 +34,11 @@ import {
   Leaf,
   Target,
   CircleDot,
+  ArrowUpDown,
+  BatteryLow,
+  ChevronLeft,
+  ChevronRight,
+  X,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -236,6 +241,17 @@ const CAMERA_ANALYSIS = {
   "CAM-06": { 検知頻度: 42, 増加傾向: 35, 慣れ度: 24, 夜間比率: 55, 滞在時間: 38 },
 };
 
+/* カメラ機器の稼働状態（電池残量%・電波強度0〜4・オンライン可否）
+   現場の設置機器が正常に動いているかをひと目で把握するためのデータ */
+const CAMERA_STATUS = {
+  "CAM-01": { battery: 92, signal: 4, online: true },
+  "CAM-02": { battery: 68, signal: 3, online: true },
+  "CAM-03": { battery: 41, signal: 4, online: true },
+  "CAM-04": { battery: 17, signal: 2, online: true }, // 電池残量わずか
+  "CAM-05": { battery: 74, signal: 3, online: true },
+  "CAM-06": { battery: 0, signal: 0, online: false }, // オフライン
+};
+
 /* ------------------------------------------------------------------ */
 /* 共通UI部品                                                          */
 /* ------------------------------------------------------------------ */
@@ -304,6 +320,122 @@ const CHART_TOOLTIP_STYLE = {
   fontSize: 14,
   color: "#0b0b0b",
 };
+
+/** 電池残量バッジ（20%未満=赤 / 50%未満=橙 / それ以上=緑、0=グレー） */
+function BatteryBadge({ level, online }) {
+  if (!online) {
+    return (
+      <span className="inline-flex items-center gap-1 text-base font-bold text-gray-400">
+        <BatteryLow className="h-5 w-5" aria-hidden />
+        —
+      </span>
+    );
+  }
+  const color =
+    level < 20 ? COLORS.critical : level < 50 ? COLORS.serious : COLORS.good;
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-base font-bold tabular-nums"
+      style={{ color }}
+    >
+      <BatteryLow className="h-5 w-5" aria-hidden />
+      {level}%
+    </span>
+  );
+}
+
+/** 電波強度（0〜4本）を4本のバーで表示 */
+function SignalBars({ level }) {
+  return (
+    <span className="inline-flex items-end gap-0.5" aria-label={`電波強度 ${level}/4`}>
+      {[1, 2, 3, 4].map((i) => (
+        <span
+          key={i}
+          className="w-1.5 rounded-sm"
+          style={{
+            height: `${i * 3 + 3}px`,
+            backgroundColor: i <= level ? COLORS.good : "#d6d5cf",
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
+/** 検知1件の詳細モーダル（履歴テーブルの行クリックで表示） */
+function DetectionModal({ record, onClose }) {
+  if (!record) return null;
+  const status = CAMERA_STATUS[record.cameraId];
+  const rows = [
+    ["検知ID", record.id],
+    ["検知日時", record.datetimeLabel],
+    ["カメラID", `${record.cameraId}（${CAMERA_PLACES[record.cameraId]}）`],
+    ["動物の種類", record.animal],
+    ["最大同時検知頭数", `${record.maxCount} 頭`],
+    ["実行アクション", record.action],
+    ["滞在時間", `${record.staySec} 秒`],
+    ["時間帯", record.hour >= 18 || record.hour <= 4 ? "夜間（18時〜翌4時）" : "日中（5時〜17時）"],
+  ];
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="検知詳細"
+    >
+      <div
+        className="w-full max-w-lg rounded-xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className="flex items-center justify-between rounded-t-xl px-6 py-4 text-white"
+          style={{ backgroundColor: COLORS[record.animal] }}
+        >
+          <div className="flex items-center gap-2.5">
+            <PawPrint className="h-6 w-6" aria-hidden />
+            <div>
+              <p className="text-xl font-bold">{record.animal} を検知</p>
+              <p className="text-sm opacity-90">{record.datetimeLabel}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-1.5 hover:bg-white/20"
+            aria-label="閉じる"
+          >
+            <X className="h-6 w-6" aria-hidden />
+          </button>
+        </div>
+        <dl className="divide-y divide-gray-100 px-6 py-2">
+          {rows.map(([k, v]) => (
+            <div key={k} className="flex items-center justify-between gap-4 py-2.5">
+              <dt className="text-base font-semibold text-gray-500">{k}</dt>
+              <dd className="text-right text-base font-bold text-gray-900">{v}</dd>
+            </div>
+          ))}
+        </dl>
+        <div className="flex items-center justify-between gap-4 border-t border-gray-100 bg-gray-50 px-6 py-3.5">
+          <span className="text-base font-semibold text-gray-500">検知時の機器状態</span>
+          <span className="flex items-center gap-4">
+            <BatteryBadge level={status.battery} online={status.online} />
+            <SignalBars level={status.signal} />
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-sm font-bold ${
+                status.online
+                  ? "bg-emerald-50 text-emerald-800"
+                  : "bg-gray-200 text-gray-600"
+              }`}
+            >
+              {status.online ? "オンライン" : "オフライン"}
+            </span>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /* ① 総合ダッシュボード                                                */
@@ -433,6 +565,72 @@ function DashboardScreen() {
         </div>
       </Card>
 
+      {/* カメラ機器の稼働状態 */}
+      <Card>
+        <CardHeader
+          icon={Camera}
+          title="カメラ機器の稼働状態"
+          sub="現場に設置した6台の電池残量・電波・オンライン状況"
+          right={
+            <span className="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 text-base font-bold text-red-700">
+              <AlertTriangle className="h-4 w-4" aria-hidden />
+              要対応 2台
+            </span>
+          }
+        />
+        <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
+          {CAMERAS.map((c) => {
+            const s = CAMERA_STATUS[c];
+            const alert = !s.online || s.battery < 20;
+            return (
+              <div
+                key={c}
+                className={`rounded-lg border-2 p-4 ${
+                  alert ? "border-red-300 bg-red-50/60" : "border-gray-200"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xl font-bold text-gray-900">{c}</p>
+                    <p className="flex items-center gap-1 text-base text-gray-600">
+                      <MapPin className="h-4 w-4" aria-hidden />
+                      {CAMERA_PLACES[c]}
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold ${
+                      s.online
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-gray-200 text-gray-600"
+                    }`}
+                  >
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${
+                        s.online ? "bg-emerald-600" : "bg-gray-400"
+                      }`}
+                    />
+                    {s.online ? "オンライン" : "オフライン"}
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
+                  <BatteryBadge level={s.battery} online={s.online} />
+                  <span className="flex items-center gap-2 text-sm font-semibold text-gray-500">
+                    電波
+                    <SignalBars level={s.signal} />
+                  </span>
+                </div>
+                {alert && (
+                  <p className="mt-2 flex items-center gap-1 text-sm font-bold text-red-700">
+                    <AlertTriangle className="h-4 w-4" aria-hidden />
+                    {!s.online ? "通信途絶：現地確認が必要です" : "電池残量わずか：交換をご検討ください"}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
       {/* リアルタイム速報 */}
       <Card>
         <CardHeader
@@ -481,6 +679,8 @@ function selectClass() {
   return "rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-base font-medium text-gray-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-200";
 }
 
+const PAGE_SIZE = 12;
+
 function HistoryScreen() {
   const [cameraFilter, setCameraFilter] = useState("all");
   const [animalFilter, setAnimalFilter] = useState("all");
@@ -490,6 +690,12 @@ function HistoryScreen() {
   const [exportYear, setExportYear] = useState("2026");
   const [exportMonth, setExportMonth] = useState("6");
   const [exportAnimal, setExportAnimal] = useState("サル");
+
+  // 並び替え・ページ・詳細モーダルの状態
+  const [sortKey, setSortKey] = useState("datetime");
+  const [sortDir, setSortDir] = useState("desc");
+  const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState(null);
 
   const filtered = useMemo(
     () =>
@@ -502,6 +708,61 @@ function HistoryScreen() {
       }),
     [cameraFilter, animalFilter, dateFrom, dateTo],
   );
+
+  // フィルター条件が変わったら1ページ目に戻す
+  const filterSig = `${cameraFilter}|${animalFilter}|${dateFrom}|${dateTo}`;
+  const [lastSig, setLastSig] = useState(filterSig);
+  if (filterSig !== lastSig) {
+    setLastSig(filterSig);
+    setPage(1);
+  }
+
+  const sorted = useMemo(() => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    const val = (r) =>
+      sortKey === "datetime"
+        ? `${r.dateKey} ${pad2(r.hour)}:${pad2(r.minute)}`
+        : sortKey === "camera"
+          ? r.cameraId
+          : sortKey === "animal"
+            ? r.animal
+            : sortKey === "count"
+              ? r.maxCount
+              : r.staySec;
+    return [...filtered].sort((a, b) => {
+      const va = val(a);
+      const vb = val(b);
+      if (va < vb) return -1 * dir;
+      if (va > vb) return 1 * dir;
+      return 0;
+    });
+  }, [filtered, sortKey, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const pageClamped = Math.min(page, totalPages);
+  const pageRows = sorted.slice(
+    (pageClamped - 1) * PAGE_SIZE,
+    pageClamped * PAGE_SIZE,
+  );
+
+  // フィルター結果のサマリー（総件数・のべ頭数・平均滞在時間）
+  const summary = useMemo(() => {
+    const totalHeads = filtered.reduce((s, r) => s + r.maxCount, 0);
+    const avgStay = filtered.length
+      ? Math.round(filtered.reduce((s, r) => s + r.staySec, 0) / filtered.length)
+      : 0;
+    return { count: filtered.length, totalHeads, avgStay };
+  }, [filtered]);
+
+  const toggleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(key === "datetime" ? "desc" : "asc");
+    }
+    setPage(1);
+  };
 
   const handleExport = () => {
     const rows = DETECTION_LOG.filter(
@@ -654,32 +915,79 @@ function HistoryScreen() {
         </div>
       </Card>
 
+      {/* フィルター結果のサマリー */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-gray-500">
+            <History className="h-4 w-4" aria-hidden />
+            該当検知件数
+          </p>
+          <p className="mt-1 text-4xl font-bold tabular-nums text-gray-900">
+            {summary.count}
+            <span className="ml-1 text-lg font-semibold text-gray-500">件</span>
+          </p>
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-gray-500">
+            <PawPrint className="h-4 w-4" aria-hidden />
+            のべ検知頭数
+          </p>
+          <p className="mt-1 text-4xl font-bold tabular-nums text-gray-900">
+            {summary.totalHeads}
+            <span className="ml-1 text-lg font-semibold text-gray-500">頭</span>
+          </p>
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-gray-500">
+            <Clock className="h-4 w-4" aria-hidden />
+            平均滞在時間
+          </p>
+          <p className="mt-1 text-4xl font-bold tabular-nums text-gray-900">
+            {summary.avgStay}
+            <span className="ml-1 text-lg font-semibold text-gray-500">秒</span>
+          </p>
+        </div>
+      </div>
+
       {/* 履歴データテーブル */}
       <Card>
         <CardHeader
           icon={History}
           title="検知履歴一覧"
-          sub={`該当 ${filtered.length} 件`}
+          sub="列見出しで並び替え・行クリックで詳細表示"
+          right={
+            <span className="text-base text-gray-500">
+              全 <b className="tabular-nums text-gray-700">{sorted.length}</b> 件
+            </span>
+          }
         />
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px] text-left">
+          <table className="w-full min-w-[900px] text-left">
             <thead>
               <tr className="border-b-2 border-gray-200 bg-gray-50 text-base text-gray-600">
-                <th className="px-5 py-3 font-bold">検知日時</th>
-                <th className="px-5 py-3 font-bold">カメラID</th>
-                <th className="px-5 py-3 font-bold">動物の種類</th>
-                <th className="px-5 py-3 text-right font-bold">最大同時検知頭数</th>
+                <SortableTh label="検知日時" col="datetime" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <SortableTh label="カメラID" col="camera" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <SortableTh label="動物の種類" col="animal" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <SortableTh label="最大同時検知頭数" col="count" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right" />
                 <th className="px-5 py-3 font-bold">実行アクション</th>
-                <th className="px-5 py-3 text-right font-bold">滞在時間（秒）</th>
+                <SortableTh label="滞在時間（秒）" col="stay" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right" />
               </tr>
             </thead>
             <tbody>
-              {filtered.slice(0, 30).map((r, i) => (
+              {pageRows.map((r, i) => (
                 <tr
                   key={r.id}
-                  className={`border-b border-gray-100 text-base text-gray-800 ${
+                  onClick={() => setSelected(r)}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelected(r);
+                    }
+                  }}
+                  className={`cursor-pointer border-b border-gray-100 text-base text-gray-800 ${
                     i % 2 === 1 ? "bg-gray-50/60" : ""
-                  } hover:bg-emerald-50/50`}
+                  } hover:bg-emerald-50/60 focus:bg-emerald-50 focus:outline-none`}
                 >
                   <td className="px-5 py-3 font-medium tabular-nums">
                     {r.datetimeLabel}
@@ -700,16 +1008,81 @@ function HistoryScreen() {
                   <td className="px-5 py-3 text-right tabular-nums">{r.staySec}</td>
                 </tr>
               ))}
+              {pageRows.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-5 py-10 text-center text-base text-gray-500">
+                    条件に一致する検知履歴はありません。フィルターを変更してください。
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
-        {filtered.length > 30 && (
-          <p className="border-t border-gray-100 px-5 py-3 text-base text-gray-500">
-            最新30件を表示中（全 {filtered.length} 件）。全件はCSVエクスポートをご利用ください。
-          </p>
+
+        {/* ページネーション */}
+        {sorted.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-5 py-3.5">
+            <p className="text-base text-gray-500">
+              {(pageClamped - 1) * PAGE_SIZE + 1}〜
+              {Math.min(pageClamped * PAGE_SIZE, sorted.length)} 件目 / 全{" "}
+              {sorted.length} 件
+            </p>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={pageClamped <= 1}
+                className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 text-base font-bold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronLeft className="h-5 w-5" aria-hidden />
+                前へ
+              </button>
+              <span className="px-3 text-base font-bold tabular-nums text-gray-700">
+                {pageClamped} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={pageClamped >= totalPages}
+                className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 text-base font-bold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                次へ
+                <ChevronRight className="h-5 w-5" aria-hidden />
+              </button>
+            </div>
+          </div>
         )}
       </Card>
+
+      <DetectionModal record={selected} onClose={() => setSelected(null)} />
     </div>
+  );
+}
+
+/** 並び替え可能なテーブル見出しセル */
+function SortableTh({ label, col, sortKey, sortDir, onSort, align = "left" }) {
+  const active = sortKey === col;
+  return (
+    <th className={`px-5 py-3 font-bold ${align === "right" ? "text-right" : ""}`}>
+      <button
+        type="button"
+        onClick={() => onSort(col)}
+        className={`inline-flex items-center gap-1 font-bold hover:text-emerald-700 ${
+          active ? "text-emerald-700" : "text-gray-600"
+        } ${align === "right" ? "flex-row-reverse" : ""}`}
+      >
+        {label}
+        {active ? (
+          sortDir === "asc" ? (
+            <ChevronRight className="h-4 w-4 -rotate-90" aria-label="昇順" />
+          ) : (
+            <ChevronRight className="h-4 w-4 rotate-90" aria-label="降順" />
+          )
+        ) : (
+          <ArrowUpDown className="h-4 w-4 text-gray-400" aria-hidden />
+        )}
+      </button>
+    </th>
   );
 }
 

@@ -3,7 +3,9 @@
 > 対象: このリポジトリを引き継ぐ開発者(人間・AIエージェント問わず)。
 > 目的: システム構成の選定理由、棄却済み代替案、運用の暗黙ルール、技術的負債を
 > 「退職するシニアエンジニアの引き継ぎ」水準で残す。
-> 最終更新: 2026-07-07(v2: 事実誤りの修正 + 問題・改善バックログの優先度付け)
+> 最終更新: 2026-07-10(v3: P0-1/P1-1実装完了。実装検証で新たな事実誤認を2件発見・修正
+> — 海上境界スクリプトの挙動誤記述はv2で修正済みだったが、firebaseがそもそも本番未到達の
+> デッドコードだった件と、ESLint内訳の見落とし2件〈react-hooks/refs〉が今回判明)
 >
 > **この文書自身の運用ルール**: 記述は実コードで裏取りしてから書く(v1 は海上境界の
 > 挙動と ESLint 件数を推測で書いて誤っていた — v2 で修正済み)。コードを変えたら
@@ -177,7 +179,7 @@ SKILL.md              ← 本書
 
 | # | 問題 | Sev | 工数 | 最初の一歩 |
 | --- | --- | --- | --- | --- |
-| P0-1 | **No-Guess フォールバックの黙認**: `isSolvable` が200回失敗すると `console.warn` を出して**運ゲー盤面のまま続行**する。市区町村モード(数百セル)や extreme で発生しやすく、「論理で解ける」というプロダクトの約束が静かに破れる。頻度・発生マップが未計測。 | 高 | 中 | まず計測: フォールバック発生時に `playStats` へカウンタを1つ足し、`hakuchizuStats()` に出す。頻度が高いマップが判明したら、試行上限を上げるか mine 率を動的に下げる |
+| P0-1 | ~~**No-Guess フォールバックの黙認**~~ **✅ 実装済み**: `isSolvable` が200回失敗した回数を `playStats.noGuessFallbacks[mapId]` に記録するようにした(`useGame.ts` の `placeMinesAsync` が `{ board, usedNoGuessFallback }` を返し、`openCell` が `recordNoGuessFallback(mapId)` を呼ぶ)。`getPlayStatsSummary()` に `noGuessFallbackTotal` / `noGuessFallbacksByMap` を追加し `hakuchizuStats()` から確認可能。**意図的にUIには出していない**(「No-Guess」はプレイヤーに見せる用語ではないため、既存のトーン規約に従いデータ層のみ)。次の一歩: テスターのエクスポートを集計し、頻度が高いマップがあれば試行上限を上げるか mine 率を動的に下げる。 | 高 | 中 | 完了 |
 | P0-2 | **自動テストがゼロ**: 検証は使い捨て Playwright + 目視のみ。`useGame` のソルバー/BFS開放/クリア判定と `playStats` のマイグレーションは、壊れても誰も気づかない。 | 高 | 中 | Vitest を devDep に追加し、まず純関数の `isSolvable`(既知の盤面で solvable/unsolvable を assert)と `playStats` のマイグレーション(v1→将来 v2)から。UI は後回しでよい |
 | P0-3 | **ベストタイムの二重管理**: `useGame` が `hakuchizu-best-*` を直接書き、`playStats.maps[].bestTimeSec` にも別経路で入る。ズレると「統計のベスト」と「クリア画面のベスト」が食い違う。特に片方だけ消えた/移行した端末で不整合。 | 中 | 中 | 単一の情報源(playStats 側)に寄せ、`hakuchizu-best-*` は読み取り時のフォールバックとして残す。移行コードを playStats マイグレーションに同梱 |
 
@@ -185,8 +187,8 @@ SKILL.md              ← 本書
 
 | # | 改善 | Sev | 工数 | 最初の一歩 |
 | --- | --- | --- | --- | --- |
-| P1-1 | **firebase を動的 import 化**: 凍結中(§6)の firebase が本番バンドルに常時同梱され、チャンク500KB超の主因の一つ。`isRankingEnabled` が false の間はロードすらしない形にできる。 | 中 | 小 | `firebase.ts` の各 `firebase/*` import を、関数内 `await import(...)` に変える。`isRankingEnabled` ガードは既にあるので影響は局所的 |
-| P1-2 | **ESLint ベースライン違反 23件**(error 22 + warning 1、内訳 `no-explicit-any` 16 / `set-state-in-effect` 4 / `exhaustive-deps` 1。`App.tsx`/`MapBoard.tsx`/`useGame.ts`)。**lint はビルドゲート外**(`build` は tsc+vite のみ)なので気づかず増える。新規コードはクリーン維持の紳士協定のみが歯止め。 | 中 | 中 | 最大の `any`(16件)から。GeoJSON を `FeatureCollection<Geometry, {code:string; name:string; trivia?:string}>` で型付けすれば大半が消える。片付いたら CI に `npm run lint` を追加してリグレッションを止める |
+| P1-1 | ~~**firebase を動的 import 化**~~ **✅ 実装済み(ただし当初の根拠は誤りだった)**: 実装前に検証したところ、**現状 firebase は本番バンドルに一切含まれていなかった**(`RankingBoard`/`useRanking` が `App.tsx` から一度も import されておらず、到達不能なデッドコードだったため)。つまり「500KB超チャンクの主因」という当初の記述は事実誤認 — 実際の主因は**都道府県/地方のGeoJSONデータ**(`japan-*.js` が2.5MB、`R08`/`R02`/`USA` 等も1MB超。これらは既に `App.tsx` でマップ単位の動的importになっており、設計上は妥当)。それでも、**Phase 2でランキングを解禁した瞬間に firebase(firestore SDKだけで約567KB)が読み込まれるチャンクに同梱される**将来リスクは実在するため、`firebase.ts`/`rankingRepository.ts` を `await import('firebase/*')` 化する対応を先行実施し、`RankingBoard` を一時的に接続してビルド→firebaseが独立チャンク(`index.esm-*.js`)に分離され `index.html` の modulepreload にも入らないこと(=実際に使うまで読み込まれない)を確認した。 | 中 | 小 | 完了 |
+| P1-2 | **ESLint ベースライン 23件**(error 22 + warning 1)。内訳の再検証で当初の記述に漏れが判明: `no-explicit-any` 16 / `set-state-in-effect` 4 / `exhaustive-deps` 1 に加えて **`react-hooks/refs` 2件を見落としていた**(P0-1の作業前から `useGame.ts` の dev限定フック `__hakuchizuGame` 実装に存在。`cellsRef.current = cells` をレンダー中に直接代入している箇所。実害は開発ビルドのみで本番には影響しないが、直すなら `useEffect` 内での代入に変更)。`App.tsx`/`MapBoard.tsx`/`useGame.ts` に分布。**lint はビルドゲート外**(`build` は tsc+vite のみ)なので気づかず増える。新規コードはクリーン維持の紳士協定のみが歯止め。 | 中 | 中 | 最大の `any`(16件)から。GeoJSON を `FeatureCollection<Geometry, {code:string; name:string; trivia?:string}>` で型付けすれば大半が消える。片付いたら CI に `npm run lint` を追加してリグレッションを止める |
 | P1-3 | **CI が無い**: PR の型/ビルド/lint チェックが自動で走らない。壊れた PR が main=本番に直行しうる。 | 中 | 小 | GitHub Actions で `npm ci && npm run build`(+ P1-2 後に lint)。ビルドは約2分・Tailwind 生成が72%なのでキャッシュ必須 |
 
 ### P2 — 余裕があれば/外部入力待ち
@@ -258,11 +260,12 @@ SKILL.md              ← 本書
 
 ---
 
-## 10. 現在地とロードマップ(2026-07-07 時点)
+## 10. 現在地とロードマップ(2026-07-10 時点)
 
 **完了**: ローカル計測 / 開放コレクション画面(全体達成率・🏆・チップ+N畳み) /
 プレイ統計画面 / 絵文字シェア(コレクション進捗バー同梱) / ランキング実装(凍結) /
-AI指示文 v3 / 本番リリース(PR #1)
+AI指示文 v3 / 本番リリース(PR #1) / No-Guessフォールバック頻度計測(P0-1) /
+firebase 動的import化(P1-1)
 
 **待ち(外部入力)**:
 - ChatGPT 採用セット(スクショ4枚+v3プロンプトで実行)→ i18n 仮文言の一斉差し替え
@@ -270,11 +273,13 @@ AI指示文 v3 / 本番リリース(PR #1)
 
 **ゲート判定(2〜4週間後)**:
 - テスターの `hakuchizuStats()` JSON を回収 → `docs/retention-metrics.md` §4 で判定
+  (`noGuessFallbackTotal` もあわせて確認し、運ゲー化の頻度が高いマップがないかチェック)
 - 通過 → ランキング解禁(§6の手順) / 不通過 → コレクション強化+人気マップ(topMaps)への
   コンテンツ(雑学)追加に投資
 
 **その先の候補**: プレイ統計のゲート判定ダッシュボード化、絵文字シェアのマップ形状版、
-firebase の動的 import 化、useGame ソルバーのユニットテスト。
+useGame ソルバーのユニットテスト(P0-2)、`japan-*.js`(2.5MB)など大型GeoJSONチャンクの
+軽量化調査(precision削減 or trivia分離)。
 
 ---
 

@@ -1,18 +1,4 @@
-import {
-  collection,
-  doc,
-  getCountFromServer,
-  getDoc,
-  getDocs,
-  limit,
-  orderBy,
-  query,
-  serverTimestamp,
-  setDoc,
-  where,
-  Timestamp,
-  type DocumentData,
-} from 'firebase/firestore';
+import type { DocumentData } from 'firebase/firestore';
 import { ensureSignedIn, getDb } from './firebase';
 import type { Difficulty } from '../hooks/useGame';
 import {
@@ -26,12 +12,22 @@ import {
 
 const SCORES_COLLECTION = 'scores';
 
+// Loaded on demand so firebase/firestore never enters a bundle chunk unless
+// a caller actually reaches these functions (see src/lib/firebase.ts).
+let firestoreApiPromise: Promise<typeof import('firebase/firestore')> | null = null;
+function getFirestoreApi() {
+  if (!firestoreApiPromise) {
+    firestoreApiPromise = import('firebase/firestore');
+  }
+  return firestoreApiPromise;
+}
+
 function scoreDocId(uid: string, mapId: string, difficulty: Difficulty): string {
   return `${uid}_${mapId}_${difficulty}`;
 }
 
-function toScoreEntry(data: DocumentData): ScoreEntry {
-  const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toMillis() : 0;
+function toScoreEntry(data: DocumentData, fs: Awaited<ReturnType<typeof getFirestoreApi>>): ScoreEntry {
+  const createdAt = data.createdAt instanceof fs.Timestamp ? data.createdAt.toMillis() : 0;
   return {
     uid: String(data.uid ?? ''),
     name: String(data.name ?? ''),
@@ -48,22 +44,23 @@ export async function submitScore(input: SubmitScoreInput): Promise<SubmitResult
     throw new Error('Invalid score input');
   }
 
+  const fs = await getFirestoreApi();
   const uid = await ensureSignedIn();
-  const db = getDb();
-  const ref = doc(db, SCORES_COLLECTION, scoreDocId(uid, input.mapId, input.difficulty));
+  const db = await getDb();
+  const ref = fs.doc(db, SCORES_COLLECTION, scoreDocId(uid, input.mapId, input.difficulty));
 
-  const existing = await getDoc(ref);
-  if (existing.exists() && toScoreEntry(existing.data()).timeSec <= input.timeSec) {
+  const existing = await fs.getDoc(ref);
+  if (existing.exists() && toScoreEntry(existing.data(), fs).timeSec <= input.timeSec) {
     return 'notImproved';
   }
 
-  await setDoc(ref, {
+  await fs.setDoc(ref, {
     uid,
     name,
     mapId: input.mapId,
     difficulty: input.difficulty,
     timeSec: input.timeSec,
-    createdAt: serverTimestamp(),
+    createdAt: fs.serverTimestamp(),
   });
 
   return existing.exists() ? 'improved' : 'created';
@@ -74,16 +71,17 @@ export async function fetchTopScores(
   difficulty: Difficulty,
   topN: number = RANKING_TOP_N,
 ): Promise<RankedScore[]> {
-  const db = getDb();
-  const q = query(
-    collection(db, SCORES_COLLECTION),
-    where('mapId', '==', mapId),
-    where('difficulty', '==', difficulty),
-    orderBy('timeSec', 'asc'),
-    limit(topN),
+  const fs = await getFirestoreApi();
+  const db = await getDb();
+  const q = fs.query(
+    fs.collection(db, SCORES_COLLECTION),
+    fs.where('mapId', '==', mapId),
+    fs.where('difficulty', '==', difficulty),
+    fs.orderBy('timeSec', 'asc'),
+    fs.limit(topN),
   );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((d, i) => ({ ...toScoreEntry(d.data()), rank: i + 1 }));
+  const snapshot = await fs.getDocs(q);
+  return snapshot.docs.map((d, i) => ({ ...toScoreEntry(d.data(), fs), rank: i + 1 }));
 }
 
 export async function fetchMyRank(
@@ -91,13 +89,14 @@ export async function fetchMyRank(
   difficulty: Difficulty,
   timeSec: number,
 ): Promise<number> {
-  const db = getDb();
-  const q = query(
-    collection(db, SCORES_COLLECTION),
-    where('mapId', '==', mapId),
-    where('difficulty', '==', difficulty),
-    where('timeSec', '<', timeSec),
+  const fs = await getFirestoreApi();
+  const db = await getDb();
+  const q = fs.query(
+    fs.collection(db, SCORES_COLLECTION),
+    fs.where('mapId', '==', mapId),
+    fs.where('difficulty', '==', difficulty),
+    fs.where('timeSec', '<', timeSec),
   );
-  const snapshot = await getCountFromServer(q);
+  const snapshot = await fs.getCountFromServer(q);
   return snapshot.data().count + 1;
 }

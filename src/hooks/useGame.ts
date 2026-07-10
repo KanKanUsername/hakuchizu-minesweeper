@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { recordNoGuessFallback } from '../lib/playStats';
 
 export type GameStatus = 'idle' | 'playing' | 'cleared' | 'gameover';
 
@@ -90,7 +91,7 @@ export function useGame(featureCodes: string[], adjacency: Record<string, string
     }
   }, [status, prefCode, time, difficulty]);
 
-  const placeMinesAsync = (firstClickedCode: string): Promise<Record<string, CellState>> => {
+  const placeMinesAsync = (firstClickedCode: string): Promise<{ board: Record<string, CellState>; usedNoGuessFallback: boolean }> => {
     return new Promise((resolve) => {
       const generateBoard = () => {
         const safeCodes = [firstClickedCode, ...(adjacency[firstClickedCode] || [])];
@@ -186,13 +187,13 @@ export function useGame(featureCodes: string[], adjacency: Record<string, string
         for (let i = 0; i < 10; i++) {
           const board = generateBoard();
           if (isSolvable(board)) {
-            return resolve(board);
+            return resolve({ board, usedNoGuessFallback: false });
           }
           bestBoard = board;
           attempts++;
           if (attempts >= 200) {
             console.warn("No-guess board could not be generated after 200 attempts. Using fallback.");
-            return resolve(bestBoard);
+            return resolve({ board: bestBoard, usedNoGuessFallback: true });
           }
         }
         // Yield to main thread to prevent freezing
@@ -226,9 +227,12 @@ export function useGame(featureCodes: string[], adjacency: Record<string, string
 
     if (status === 'idle') {
       setIsGenerating(true);
-      placeMinesAsync(code).then(newBoard => {
+      placeMinesAsync(code).then(({ board: newBoard, usedNoGuessFallback }) => {
         setIsGenerating(false);
         setStatus('playing');
+        if (usedNoGuessFallback) {
+          recordNoGuessFallback(prefCode || 'JAPAN');
+        }
         processOpen(newBoard, code);
       });
       return;

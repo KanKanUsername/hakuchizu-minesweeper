@@ -1,6 +1,5 @@
-import { initializeApp, type FirebaseApp } from 'firebase/app';
-import { getFirestore, type Firestore } from 'firebase/firestore';
-import { getAuth, signInAnonymously } from 'firebase/auth';
+import type { FirebaseApp } from 'firebase/app';
+import type { Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string | undefined,
@@ -11,24 +10,29 @@ const firebaseConfig = {
 
 export const isRankingEnabled = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
 
-let app: FirebaseApp | null = null;
+// firebase/* is dynamically imported so it never enters any bundle chunk
+// unless ranking is actually enabled AND a caller reaches this module's
+// async functions (e.g. once RankingBoard is wired into App.tsx for Phase 2).
+let appPromise: Promise<FirebaseApp> | null = null;
 
-function getApp(): FirebaseApp {
+function getApp(): Promise<FirebaseApp> {
   if (!isRankingEnabled) {
-    throw new Error('Firebase is not configured (VITE_FIREBASE_* env vars missing)');
+    return Promise.reject(new Error('Firebase is not configured (VITE_FIREBASE_* env vars missing)'));
   }
-  if (!app) {
-    app = initializeApp(firebaseConfig);
+  if (!appPromise) {
+    appPromise = import('firebase/app').then(({ initializeApp }) => initializeApp(firebaseConfig));
   }
-  return app;
+  return appPromise;
 }
 
-export function getDb(): Firestore {
-  return getFirestore(getApp());
+export async function getDb(): Promise<Firestore> {
+  const [{ getFirestore }, app] = await Promise.all([import('firebase/firestore'), getApp()]);
+  return getFirestore(app);
 }
 
 export async function ensureSignedIn(): Promise<string> {
-  const auth = getAuth(getApp());
+  const [{ getAuth, signInAnonymously }, app] = await Promise.all([import('firebase/auth'), getApp()]);
+  const auth = getAuth(app);
   if (auth.currentUser) {
     return auth.currentUser.uid;
   }

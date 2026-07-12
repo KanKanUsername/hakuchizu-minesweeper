@@ -22,6 +22,7 @@ export interface PlayStats {
   maps: Record<string, MapPlayStats>;
   openedCodes: Record<string, string[]>;
   mapTotals: Record<string, number>;
+  noGuessFallbacks: Record<string, number>;
 }
 
 export interface GameEndRecord {
@@ -41,6 +42,8 @@ export interface PlayStatsSummary {
   playedLast7Days: number;
   topMaps: { key: string; plays: number; clears: number }[];
   uniqueOpenedByMap: Record<string, number>;
+  noGuessFallbackTotal: number;
+  noGuessFallbacksByMap: Record<string, number>;
 }
 
 function emptyStats(): PlayStats {
@@ -53,6 +56,7 @@ function emptyStats(): PlayStats {
     maps: {},
     openedCodes: {},
     mapTotals: {},
+    noGuessFallbacks: {},
   };
 }
 
@@ -63,6 +67,7 @@ export function getPlayStats(): PlayStats {
     const parsed = JSON.parse(raw) as PlayStats;
     if (parsed.version !== 1) return emptyStats();
     parsed.mapTotals = parsed.mapTotals ?? {};
+    parsed.noGuessFallbacks = parsed.noGuessFallbacks ?? {};
     return parsed;
   } catch {
     return emptyStats();
@@ -139,6 +144,12 @@ export function recordGameEnd(record: GameEndRecord): void {
   save(stats);
 }
 
+export function recordNoGuessFallback(mapId: string): void {
+  const stats = getPlayStats();
+  stats.noGuessFallbacks[mapId] = (stats.noGuessFallbacks[mapId] ?? 0) + 1;
+  save(stats);
+}
+
 export function getPlayStatsSummary(): PlayStatsSummary {
   const stats = getPlayStats();
   const now = new Date();
@@ -157,6 +168,8 @@ export function getPlayStatsSummary(): PlayStatsSummary {
     uniqueOpenedByMap[mapId] = codes.length;
   });
 
+  const noGuessFallbackTotal = Object.values(stats.noGuessFallbacks).reduce((sum, n) => sum + n, 0);
+
   return {
     totalPlays: stats.totals.plays,
     clearRate: stats.totals.plays > 0 ? stats.totals.clears / stats.totals.plays : 0,
@@ -165,6 +178,8 @@ export function getPlayStatsSummary(): PlayStatsSummary {
     playedLast7Days: stats.playDates.filter(d => last7.has(d)).length,
     topMaps,
     uniqueOpenedByMap,
+    noGuessFallbackTotal,
+    noGuessFallbacksByMap: stats.noGuessFallbacks,
   };
 }
 
